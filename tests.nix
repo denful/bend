@@ -935,35 +935,93 @@ in
     };
 
     transformAll."test-valid-input-returns-right-attrset" = {
-      expr = (bend.transformAll { name = bend.str; age = bend.int; }).get { name = "alice"; age = 30; };
-      expected = bend.right { name = "alice"; age = 30; };
+      expr =
+        (bend.transformAll {
+          name = bend.str;
+          age = bend.int;
+        }).get
+          {
+            name = "alice";
+            age = 30;
+          };
+      expected = bend.right {
+        name = "alice";
+        age = 30;
+      };
     };
     transformAll."test-single-invalid-field-returns-left-list" = {
-      expr = (bend.transformAll { name = bend.str; age = bend.int; }).get { name = "alice"; age = "thirty"; };
-      expected = bend.left [ { field = "age"; got = "thirty"; } ];
+      expr =
+        (bend.transformAll {
+          name = bend.str;
+          age = bend.int;
+        }).get
+          {
+            name = "alice";
+            age = "thirty";
+          };
+      expected = bend.left [
+        {
+          field = "age";
+          got = "thirty";
+        }
+      ];
     };
     transformAll."test-all-invalid-fields-accumulated" = {
       # attrNames sorts alphabetically: age < name → age error first
-      expr = (bend.transformAll { name = bend.str; age = bend.int; }).get { name = 1; age = "thirty"; };
+      expr =
+        (bend.transformAll {
+          name = bend.str;
+          age = bend.int;
+        }).get
+          {
+            name = 1;
+            age = "thirty";
+          };
       expected = bend.left [
-        { field = "age"; got = "thirty"; }
-        { field = "name"; got = 1; }
+        {
+          field = "age";
+          got = "thirty";
+        }
+        {
+          field = "name";
+          got = 1;
+        }
       ];
     };
     transformAll."test-missing-field-counted-as-error" = {
-      expr = (bend.transformAll { name = bend.str; age = bend.int; }).get { name = "alice"; };
-      expected = bend.left [ { field = "age"; got = { name = "alice"; }; } ];
+      expr =
+        (bend.transformAll {
+          name = bend.str;
+          age = bend.int;
+        }).get
+          { name = "alice"; };
+      expected = bend.left [
+        {
+          field = "age";
+          got = {
+            name = "alice";
+          };
+        }
+      ];
     };
     transformAll."test-transformAllWith-custom-error-shape" = {
-      expr = (bend.transformAllWith (f: g: "${f}:${builtins.typeOf g}") {
-        name = bend.str;
-        age = bend.int;
-      }).get { name = "alice"; age = "thirty"; };
+      expr =
+        (bend.transformAllWith (f: g: "${f}:${builtins.typeOf g}") {
+          name = bend.str;
+          age = bend.int;
+        }).get
+          {
+            name = "alice";
+            age = "thirty";
+          };
       expected = bend.left [ "age:string" ];
     };
     transformAll."test-defaultTransformError-shape" = {
       expr = bend.defaultTransformError "age" 30;
-      expected = { field = "age"; got = 30; };
+      expected = {
+        field = "age";
+        got = 30;
+      };
     };
 
     index."test-index-zero-gets-first-element" = {
@@ -1189,8 +1247,14 @@ in
     };
 
     bifunctor."test-bimap-set-delegates-to-inner" = {
-      expr = (bend.bimap (_: "err") (x: x) (bend.attr "x")).set { x = 1; y = 2; } 99;
-      expected = { x = 99; y = 2; };
+      expr = (bend.bimap (_: "err") (x: x) (bend.attr "x")).set {
+        x = 1;
+        y = 2;
+      } 99;
+      expected = {
+        x = 99;
+        y = 2;
+      };
     };
 
     errors."test-label-replaces-left" = {
@@ -1210,7 +1274,10 @@ in
 
     errors."test-region-wraps-left-with-context" = {
       expr = (bend.region "parsing config" bend.int).get "x";
-      expected = bend.left { context = "parsing config"; inner = "x"; };
+      expected = bend.left {
+        context = "parsing config";
+        inner = "x";
+      };
     };
 
     errors."test-region-passes-right" = {
@@ -1220,22 +1287,42 @@ in
 
     errors."test-region-stacks" = {
       expr = (bend.region "outer" (bend.region "inner" bend.int)).get "x";
-      expected = bend.left { context = "outer"; inner = { context = "inner"; inner = "x"; }; };
+      expected = bend.left {
+        context = "outer";
+        inner = {
+          context = "inner";
+          inner = "x";
+        };
+      };
     };
 
     errors."test-annotate-wraps-left-with-path-and-got" = {
-      expr = (bend.annotate ["user" "name"] bend.str).get 42;
-      expected = bend.left { path = ["user" "name"]; got = 42; };
+      expr = (bend.annotate [ "user" "name" ] bend.str).get 42;
+      expected = bend.left {
+        path = [
+          "user"
+          "name"
+        ];
+        got = 42;
+      };
     };
 
     errors."test-annotate-passes-right" = {
-      expr = (bend.annotate ["user" "name"] bend.str).get "alice";
+      expr = (bend.annotate [ "user" "name" ] bend.str).get "alice";
       expected = bend.right "alice";
     };
 
     errors."test-annotateWith-custom-error-fn" = {
-      expr = (bend.annotateWith (path: got: { at = path; value = got; }) ["x"] bend.int).get "bad";
-      expected = bend.left { at = ["x"]; value = "bad"; };
+      expr =
+        (bend.annotateWith (path: got: {
+          at = path;
+          value = got;
+        }) [ "x" ] bend.int).get
+          "bad";
+      expected = bend.left {
+        at = [ "x" ];
+        value = "bad";
+      };
     };
 
     errors."test-ensure-returns-msg-when-pred-fails" = {
@@ -1254,8 +1341,14 @@ in
     };
 
     errors."test-defaultPathError-shape" = {
-      expr = bend.defaultPathError ["a" "b"] "bad";
-      expected = { path = ["a" "b"]; got = "bad"; };
+      expr = bend.defaultPathError [ "a" "b" ] "bad";
+      expected = {
+        path = [
+          "a"
+          "b"
+        ];
+        got = "bad";
+      };
     };
 
     "pipe-named"."test-unnamed-steps-unchanged" = {
@@ -1264,50 +1357,97 @@ in
     };
 
     "pipe-named"."test-named-step-annotates-left" = {
-      expr = (bend.pipe [
-        { name = "age"; lens = bend.int; }
-      ]).get "bad";
-      expected = bend.left { path = ["age"]; got = "bad"; };
+      expr =
+        (bend.pipe [
+          {
+            name = "age";
+            lens = bend.int;
+          }
+        ]).get
+          "bad";
+      expected = bend.left {
+        path = [ "age" ];
+        got = "bad";
+      };
     };
 
     "pipe-named"."test-named-step-passes-right" = {
-      expr = (bend.pipe [
-        { name = "age"; lens = bend.int; }
-      ]).get 30;
+      expr =
+        (bend.pipe [
+          {
+            name = "age";
+            lens = bend.int;
+          }
+        ]).get
+          30;
       expected = bend.right 30;
     };
 
     "pipe-named"."test-path-accumulates-across-named-steps" = {
-      expr = (bend.pipe [
-        { name = "user"; lens = bend.attr "user"; }
-        { name = "name"; lens = bend.attr "name"; }
-        bend.str
-      ]).get { user = { name = 42; }; };
+      expr =
+        (bend.pipe [
+          {
+            name = "user";
+            lens = bend.attr "user";
+          }
+          {
+            name = "name";
+            lens = bend.attr "name";
+          }
+          bend.str
+        ]).get
+          {
+            user = {
+              name = 42;
+            };
+          };
       expected = bend.left 42;
     };
 
     "pipe-named"."test-named-step-outer-fail-correct-path" = {
-      expr = (bend.pipe [
-        { name = "user"; lens = bend.attr "user"; }
-        { name = "name"; lens = bend.attr "name"; }
-        bend.str
-      ]).get { };
-      expected = bend.left { path = ["user"]; got = { }; };
+      expr =
+        (bend.pipe [
+          {
+            name = "user";
+            lens = bend.attr "user";
+          }
+          {
+            name = "name";
+            lens = bend.attr "name";
+          }
+          bend.str
+        ]).get
+          { };
+      expected = bend.left {
+        path = [ "user" ];
+        got = { };
+      };
     };
 
     "pipe-named"."test-named-step-custom-errorFn" = {
-      expr = (bend.pipe [
-        { name = "x"; lens = bend.int; errorFn = path: got: "fail at ${builtins.concatStringsSep "." path}"; }
-      ]).get "bad";
+      expr =
+        (bend.pipe [
+          {
+            name = "x";
+            lens = bend.int;
+            errorFn = path: got: "fail at ${builtins.concatStringsSep "." path}";
+          }
+        ]).get
+          "bad";
       expected = bend.left "fail at x";
     };
 
     "pipe-named"."test-mixed-named-unnamed-compose" = {
-      expr = (bend.pipe [
-        { name = "count"; lens = bend.attr "count"; }
-        bend.int
-        (bend.ensure (n: n > 0) "must be positive" bend.identity)
-      ]).get { count = -1; };
+      expr =
+        (bend.pipe [
+          {
+            name = "count";
+            lens = bend.attr "count";
+          }
+          bend.int
+          (bend.ensure (n: n > 0) "must be positive" bend.identity)
+        ]).get
+          { count = -1; };
       expected = bend.left "must be positive";
     };
 
@@ -1337,16 +1477,33 @@ in
         expected = bend.left true;
       };
       "test-oneOf-first-right-wins" = {
-        expr = (bend.oneOf [ bend.str bend.int bend.bool ]).get 42;
+        expr =
+          (bend.oneOf [
+            bend.str
+            bend.int
+            bend.bool
+          ]).get
+            42;
         expected = bend.right 42;
       };
       "test-oneOf-left-when-all-fail" = {
-        expr = (bend.oneOf [ bend.str bend.int ]).get true;
+        expr =
+          (bend.oneOf [
+            bend.str
+            bend.int
+          ]).get
+            true;
         expected = bend.left true;
       };
       "test-alt-set-through-winning-branch" = {
-        expr = (bend.alt (bend.attr "x") (bend.attr "y")).set { x = 1; y = 2; } 99;
-        expected = { x = 99; y = 2; };
+        expr = (bend.alt (bend.attr "x") (bend.attr "y")).set {
+          x = 1;
+          y = 2;
+        } 99;
+        expected = {
+          x = 99;
+          y = 2;
+        };
       };
     };
 
@@ -1383,7 +1540,9 @@ in
       expected = bend.left 150;
     };
     predicate."test-orP-with-ensure" = {
-      expr = (bend.ensure (bend.orP builtins.isString builtins.isInt) "must be string or int" bend.identity).get true;
+      expr =
+        (bend.ensure (bend.orP builtins.isString builtins.isInt) "must be string or int" bend.identity).get
+          true;
       expected = bend.left "must be string or int";
     };
 
@@ -1397,7 +1556,9 @@ in
     };
     debug."test-debug-transparent-set" = {
       expr = (bend.debug "myLabel" (bend.attr "x")).set { x = 1; } 99;
-      expected = { x = 99; };
+      expected = {
+        x = 99;
+      };
     };
   };
 }

@@ -89,7 +89,10 @@ let
           let
             valResult = (validators.${name}).get attrResult.right;
           in
-          if valResult ? left then either.left (errorFn name valResult.left) else either.right valResult.right;
+          if valResult ? left then
+            either.left (errorFn name valResult.left)
+          else
+            either.right valResult.right;
 
       collectResults =
         s:
@@ -118,5 +121,12 @@ let
   transformAll = transformAllWith defaultTransformError;
 in
 {
-  inherit sequence collect transform defaultTransformError transformAllWith transformAll;
+  inherit
+    sequence
+    collect
+    transform
+    defaultTransformError
+    transformAllWith
+    transformAll
+    ;
 }

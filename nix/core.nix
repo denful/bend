@@ -38,7 +38,10 @@ let
           inherit path;
           lens = compose acc.lens wrapped;
         };
-      result = builtins.foldl' go { path = [ ]; lens = identity; } steps;
+      result = builtins.foldl' go {
+        path = [ ];
+        lens = identity;
+      } steps;
     in
     result.lens;
 

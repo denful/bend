@@ -25,8 +25,12 @@ let
   );
 
   # Predicate combinators: pure boolean functions
-  andP = p: q: v: p v && q v;
-  orP = p: q: v: p v || q v;
+  andP =
+    p: q: v:
+    p v && q v;
+  orP =
+    p: q: v:
+    p v || q v;
   notP = p: v: !(p v);
 in
 {
