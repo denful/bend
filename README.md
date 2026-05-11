@@ -207,6 +207,198 @@ lens.get { count = 42; }      # right 42
 lens.get { count = "bad"; }   # right 0    ← default absorbed the left
 ```
 
+## Structured errors — label, region, annotate
+
+By default `left` holds the original bad value. These combinators give failures shape.
+
+`label` replaces the left value with a custom message:
+
+```nix
+let lens = bend.label "expected integer" bend.int;
+in
+lens.get "hello"   # left "expected integer"
+lens.get 42        # right 42
+```
+
+`annotate` wraps left with `{ path; got }` — machine-readable location:
+
+```nix
+(bend.annotate ["user" "age"] bend.int).get "thirty"
+# left { path = ["user" "age"]; got = "thirty"; }
+```
+
+`region` stacks outer context around inner errors:
+
+```nix
+let lens = bend.region "loading server config"
+      (bend.annotate ["port"] bend.int);
+in
+lens.get "8080"
+# left { context = "loading server config"; inner = { path = ["port"]; got = "8080"; } }
+```
+
+`ensure` — validate and label in one step:
+
+```nix
+let lens = bend.pipe [
+  bend.str
+  (bend.ensure (s: s != "") "name cannot be empty" bend.identity)
+  (bend.ensure (s: builtins.stringLength s <= 50) "name too long" bend.identity)
+];
+in
+lens.get ""      # left "name cannot be empty"
+lens.get "alice" # right "alice"
+```
+
+## bimap / lmap / rmap — transform both sides
+
+Map either branch of a lens result:
+
+```nix
+# lmap: transform left only
+(bend.lmap (v: { error = "expected int"; got = v; }) bend.int).get "bad"
+# left { error = "expected int"; got = "bad"; }
+
+# rmap: transform right only
+(bend.rmap (n: n * 2) bend.int).get 21
+# right 42
+
+# bimap: transform both
+(bend.bimap (v: "FAIL: ${builtins.typeOf v}") (n: n + 1) bend.int).get 5
+# right 6
+```
+
+## Named pipe steps — automatic path tracking
+
+`pipe` accepts `{ name; lens }` steps. When a named step fails, the left carries the accumulated path:
+
+```nix
+let
+  lens = bend.pipe [
+    { name = "database"; lens = bend.attr "database"; }
+    { name = "host";     lens = bend.attr "host"; }
+    bend.str
+  ];
+in
+lens.get { database = { host = "localhost"; }; }   # right "localhost"
+lens.get { database = { host = 5432; }; }           # left { path = ["database" "host"]; got = 5432; }
+lens.get { }                                         # left { path = ["database"]; got = { }; }
+```
+
+Unnamed steps pass through unchanged — full backward compatibility.
+
+Custom error shape per step via `errorFn`:
+
+```nix
+bend.pipe [
+  { name = "port";
+    lens = bend.int;
+    errorFn = path: got: "port must be integer, got ${builtins.typeOf got}"; }
+]
+```
+
+## Parallel validation — transformAll
+
+`transform` short-circuits on the first failure. `transformAll` collects every failure:
+
+```nix
+let schema = bend.transformAll {
+  name = bend.str;
+  age  = bend.int;
+  tags = bend.ensure (l: l != []) "tags required" bend.list;
+};
+in
+schema.get { name = "alice"; age = 30; tags = ["admin"]; }
+# right { name = "alice"; age = 30; tags = ["admin"]; }
+
+schema.get { name = 1; age = "thirty"; tags = []; }
+# left [
+#   { field = "age";  got = "thirty"; }
+#   { field = "name"; got = 1; }
+#   { field = "tags"; got = "tags required"; }
+# ]
+```
+
+Custom error format:
+
+```nix
+(bend.transformAllWith (f: g: "${f}: got ${builtins.typeOf g}") {
+  name = bend.str;
+  age  = bend.int;
+}).get { name = 1; age = "thirty"; }
+# left [ "age: got string" "name: got int" ]
+```
+
+## alt and oneOf — union types
+
+Try one lens; if it fails, try another on the same input:
+
+```nix
+let strOrInt = bend.alt bend.str bend.int;
+in
+strOrInt.get "hello"   # right "hello"
+strOrInt.get 42        # right 42
+strOrInt.get true      # left true   ← neither matched
+
+bend.oneOf [ bend.str bend.int bend.bool ]   # accepts any scalar
+```
+
+## recover — dynamic fallback
+
+Unlike `withDefault` (fixed value), `recover` receives the failed value and can attempt new logic:
+
+```nix
+# Parse a port: accept int, or parse from string
+let port = bend.recover
+  (v: if builtins.isString v
+      then let n = builtins.fromJSON v;
+           in if builtins.isInt n then bend.right n else bend.left v
+      else bend.left v)
+  bend.int;
+in
+port.get 8080    # right 8080
+port.get "8080"  # right 8080
+port.get "http"  # left "http"
+```
+
+## Predicate algebra — andP / orP / notP
+
+Compose predicates for use with `validate` and `ensure`:
+
+```nix
+let
+  positive    = x: x > 0;
+  smallEnough = x: x < 1000;
+  validPort   = bend.andP positive smallEnough;
+in
+(bend.ensure validPort "port out of range" bend.int).get 80    # right 80
+(bend.ensure validPort "port out of range" bend.int).get 9999  # left "port out of range"
+(bend.ensure validPort "port out of range" bend.int).get (-1)  # left "port out of range"
+
+# orP: accept string or int
+bend.validate (bend.orP builtins.isString builtins.isInt) bend.identity
+
+# notP: must not be empty
+bend.validate (bend.notP (s: s == "")) bend.str
+```
+
+## debug — inspect pipeline values
+
+Insert `debug` anywhere in a pipeline to trace intermediate values to stderr. Transparent:
+
+```nix
+bend.pipe [
+  { name = "config";  lens = bend.debug "config-extract" (bend.attr "config"); }
+  { name = "timeout"; lens = bend.debug "timeout-extract" (bend.attr "timeout"); }
+  bend.int
+]
+# stderr: bend.debug [config-extract]: {"right":{"timeout":"30s"}}
+# stderr: bend.debug [timeout-extract]: {"right":"30s"}
+# result: left { path = ["config" "timeout"]; got = "30s"; }
+```
+
+Remove `debug` calls before shipping — they have no effect on results.
+
 ## Primitives
 
 | Lens        | `get` right when…              | `get` left when…          |
