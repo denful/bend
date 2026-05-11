@@ -1,0 +1,1 @@
+{ outputs = _: { lib = import ./.; }; }
