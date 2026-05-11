@@ -6,8 +6,8 @@ let
   parsers = import ./nix/parsers.nix either adapt core.parse core.identity;
   combinators = import ./nix/combinators.nix either;
   sequenceLib = import ./nix/sequence.nix either adapt core.identity attrLib.attr;
-  applyLib = import ./nix/apply.nix either adapt core.identity attrLib.attr;
-  extrasLib = import ./nix/extras.nix either adapt core.identity attrLib.attr core.parse;
+  applyLib = import ./nix/apply.nix either adapt core.identity;
+  extrasLib = import ./nix/extras.nix either adapt core.identity attrLib.attr;
 
   bend = rec {
     inherit adapt;

@@ -69,7 +69,7 @@ let
           r = sequenceEither (map (name: validateField name s) fieldNames);
         in
         if r ? left then r else either.right (toAttrs r.right);
-      set = s: b: b;
+      set = _: b: b;
     };
 in
 {

@@ -1,4 +1,4 @@
-either: adapt: identity: _attr:
+either: adapt: identity:
 let
   # Introspect fn args, extract matching keys from input, call fn
   # Missing required arg → left s; extra keys ignored

@@ -1,4 +1,4 @@
-either: adapt: identity: attr: parse:
+either: adapt: identity: attr:
 let
   # Focus on list element by index: out of bounds → left [], present → right value
   index =
