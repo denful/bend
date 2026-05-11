@@ -934,6 +934,38 @@ in
       expected = bend.left "hi";
     };
 
+    transformAll."test-valid-input-returns-right-attrset" = {
+      expr = (bend.transformAll { name = bend.str; age = bend.int; }).get { name = "alice"; age = 30; };
+      expected = bend.right { name = "alice"; age = 30; };
+    };
+    transformAll."test-single-invalid-field-returns-left-list" = {
+      expr = (bend.transformAll { name = bend.str; age = bend.int; }).get { name = "alice"; age = "thirty"; };
+      expected = bend.left [ { field = "age"; got = "thirty"; } ];
+    };
+    transformAll."test-all-invalid-fields-accumulated" = {
+      # attrNames sorts alphabetically: age < name → age error first
+      expr = (bend.transformAll { name = bend.str; age = bend.int; }).get { name = 1; age = "thirty"; };
+      expected = bend.left [
+        { field = "age"; got = "thirty"; }
+        { field = "name"; got = 1; }
+      ];
+    };
+    transformAll."test-missing-field-counted-as-error" = {
+      expr = (bend.transformAll { name = bend.str; age = bend.int; }).get { name = "alice"; };
+      expected = bend.left [ { field = "age"; got = { name = "alice"; }; } ];
+    };
+    transformAll."test-transformAllWith-custom-error-shape" = {
+      expr = (bend.transformAllWith (f: g: "${f}:${builtins.typeOf g}") {
+        name = bend.str;
+        age = bend.int;
+      }).get { name = "alice"; age = "thirty"; };
+      expected = bend.left [ "age:string" ];
+    };
+    transformAll."test-defaultTransformError-shape" = {
+      expr = bend.defaultTransformError "age" 30;
+      expected = { field = "age"; got = 30; };
+    };
+
     index."test-index-zero-gets-first-element" = {
       expr =
         let

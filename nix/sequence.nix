@@ -71,7 +71,52 @@ let
         if r ? left then r else either.right (toAttrs r.right);
       set = _: b: b;
     };
+  defaultTransformError = field: got: { inherit field got; };
+
+  transformAllWith =
+    errorFn: validators:
+    let
+      fieldNames = builtins.attrNames validators;
+
+      validateField =
+        name: s:
+        let
+          attrResult = (attr name).get s;
+        in
+        if attrResult ? left then
+          either.left (errorFn name attrResult.left)
+        else
+          let
+            valResult = (validators.${name}).get attrResult.right;
+          in
+          if valResult ? left then either.left (errorFn name valResult.left) else either.right valResult.right;
+
+      collectResults =
+        s:
+        let
+          results = map (name: validateField name s) fieldNames;
+          errors = builtins.filter (r: r ? left) results;
+          successes = builtins.filter (r: r ? right) results;
+        in
+        if errors != [ ] then
+          either.left (map (r: r.left) errors)
+        else
+          either.right (
+            builtins.listToAttrs (
+              builtins.genList (i: {
+                name = builtins.elemAt fieldNames i;
+                value = (builtins.elemAt successes i).right;
+              }) (builtins.length fieldNames)
+            )
+          );
+    in
+    {
+      get = collectResults;
+      set = _: b: b;
+    };
+
+  transformAll = transformAllWith defaultTransformError;
 in
 {
-  inherit sequence collect transform;
+  inherit sequence collect transform defaultTransformError transformAllWith transformAll;
 }

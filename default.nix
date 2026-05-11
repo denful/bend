@@ -56,6 +56,9 @@ let
       sequence
       collect
       transform
+      defaultTransformError
+      transformAllWith
+      transformAll
       ;
 
     inherit (applyLib) apply;
