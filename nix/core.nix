@@ -19,20 +19,16 @@ let
           isNamed = builtins.isAttrs step && step ? lens;
           innerLens = if isNamed then step.lens else step;
           path = acc.path ++ (if isNamed then [ step.name ] else [ ]);
-          # Named steps get their own errorFn (or default); unnamed steps that
-          # immediately follow a named step inherit the accumulated path.
-          shouldAnnotate = isNamed || acc.prevWasNamed;
-          errorFn = if isNamed then step.errorFn or defaultPathError else defaultPathError;
-          effectivePath = if isNamed then path else acc.path;
+          errorFn = if isNamed then step.errorFn or defaultPathError else null;
           wrapped =
-            if shouldAnnotate then
+            if isNamed then
               {
                 get =
                   s:
                   let
                     r = innerLens.get s;
                   in
-                  if r ? left then { left = errorFn effectivePath r.left; } else r;
+                  if r ? left then { left = errorFn path r.left; } else r;
                 set = innerLens.set;
               }
             else
@@ -40,10 +36,9 @@ let
         in
         {
           inherit path;
-          prevWasNamed = isNamed;
           lens = compose acc.lens wrapped;
         };
-      result = builtins.foldl' go { path = [ ]; prevWasNamed = false; lens = identity; } steps;
+      result = builtins.foldl' go { path = [ ]; lens = identity; } steps;
     in
     result.lens;
 

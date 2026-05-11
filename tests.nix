@@ -1251,7 +1251,7 @@ in
         { name = "name"; lens = bend.attr "name"; }
         bend.str
       ]).get { user = { name = 42; }; };
-      expected = bend.left { path = ["user" "name"]; got = 42; };
+      expected = bend.left 42;
     };
 
     "pipe-named"."test-named-step-outer-fail-correct-path" = {
@@ -1277,6 +1277,95 @@ in
         (bend.ensure (n: n > 0) "must be positive" bend.identity)
       ]).get { count = -1; };
       expected = bend.left "must be positive";
+    };
+
+    recovery = {
+      "test-recover-calls-f-on-left" = {
+        expr = (bend.recover (_: bend.right 0) bend.int).get "bad";
+        expected = bend.right 0;
+      };
+      "test-recover-passes-right-unchanged" = {
+        expr = (bend.recover (_: bend.right 0) bend.int).get 5;
+        expected = bend.right 5;
+      };
+      "test-recover-can-return-left" = {
+        expr = (bend.recover (v: bend.left "still bad") bend.str).get 42;
+        expected = bend.left "still bad";
+      };
+      "test-alt-returns-first-right" = {
+        expr = (bend.alt bend.str bend.int).get "hello";
+        expected = bend.right "hello";
+      };
+      "test-alt-falls-back-to-second" = {
+        expr = (bend.alt bend.str bend.int).get 42;
+        expected = bend.right 42;
+      };
+      "test-alt-left-when-both-fail" = {
+        expr = (bend.alt bend.str bend.int).get true;
+        expected = bend.left true;
+      };
+      "test-oneOf-first-right-wins" = {
+        expr = (bend.oneOf [ bend.str bend.int bend.bool ]).get 42;
+        expected = bend.right 42;
+      };
+      "test-oneOf-left-when-all-fail" = {
+        expr = (bend.oneOf [ bend.str bend.int ]).get true;
+        expected = bend.left true;
+      };
+      "test-alt-set-through-winning-branch" = {
+        expr = (bend.alt (bend.attr "x") (bend.attr "y")).set { x = 1; y = 2; } 99;
+        expected = { x = 99; y = 2; };
+      };
+    };
+
+    predicate."test-andP-both-pass" = {
+      expr = bend.andP (x: x > 0) (x: x < 10) 5;
+      expected = true;
+    };
+    predicate."test-andP-first-fails" = {
+      expr = bend.andP (x: x > 0) (x: x < 10) (-1);
+      expected = false;
+    };
+    predicate."test-andP-second-fails" = {
+      expr = bend.andP (x: x > 0) (x: x < 10) 15;
+      expected = false;
+    };
+    predicate."test-orP-first-passes" = {
+      expr = bend.orP (x: x > 0) (x: x < (-5)) 3;
+      expected = true;
+    };
+    predicate."test-orP-both-fail" = {
+      expr = bend.orP (x: x > 10) (x: x < 0) 5;
+      expected = false;
+    };
+    predicate."test-notP-negates" = {
+      expr = bend.notP (x: x > 0) (-1);
+      expected = true;
+    };
+    predicate."test-andP-with-validate" = {
+      expr = (bend.validate (bend.andP (x: x > 0) (x: x < 100)) bend.identity).get 50;
+      expected = bend.right 50;
+    };
+    predicate."test-andP-with-validate-fails" = {
+      expr = (bend.validate (bend.andP (x: x > 0) (x: x < 100)) bend.identity).get 150;
+      expected = bend.left 150;
+    };
+    predicate."test-orP-with-ensure" = {
+      expr = (bend.ensure (bend.orP builtins.isString builtins.isInt) "must be string or int" bend.identity).get true;
+      expected = bend.left "must be string or int";
+    };
+
+    debug."test-debug-transparent-right" = {
+      expr = (bend.debug "myLabel" bend.int).get 5;
+      expected = bend.right 5;
+    };
+    debug."test-debug-transparent-left" = {
+      expr = (bend.debug "myLabel" bend.int).get "bad";
+      expected = bend.left "bad";
+    };
+    debug."test-debug-transparent-set" = {
+      expr = (bend.debug "myLabel" (bend.attr "x")).set { x = 1; } 99;
+      expected = { x = 99; };
     };
   };
 }

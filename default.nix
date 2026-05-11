@@ -10,6 +10,8 @@ let
   sequenceLib = import ./nix/sequence.nix either adapt core.identity attrLib.attr;
   applyLib = import ./nix/apply.nix either adapt core.identity;
   extrasLib = import ./nix/extras.nix either adapt core.identity attrLib.attr;
+  recoveryLib = import ./nix/recovery.nix either;
+  debugLib = import ./nix/debug.nix;
 
   bend = rec {
     inherit adapt;
@@ -41,9 +43,14 @@ let
       bool
       list
       nonEmpty
+      andP
+      orP
+      notP
       ;
 
     inherit (combinators) withDefault;
+
+    inherit (recoveryLib) recover alt oneOf;
 
     inherit (sequenceLib)
       sequence
@@ -70,6 +77,8 @@ let
       annotate
       ensure
       ;
+
+    inherit (debugLib) debug;
 
     # chainable wraps a lens so each call with a function composes another apply,
     # and a call with data (non-function) triggers get
