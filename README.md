@@ -11,11 +11,11 @@ The core idea is [Parse, Don't Validate](https://lexi-lambda.github.io/blog/2019
 Everything composes from a single combinator:
 
 ```nix
-adapt lens cmap smap fmap
-# lens  — inner lens
-# cmap  — focus from outer data into inner (can fail -> left)
-# smap  — write inner result back into outer (returns either)
-# fmap  — refine focused value (can fail -> left)
+adapt lens from back refine
+# lens    — inner lens
+# from    — extract inner source from outer
+# back    — write inner result back into outer
+# refine  — refine focused value
 ```
 
 ## Either
@@ -235,7 +235,7 @@ in (bend.ensure validPort "invalid port" bend.int).get 80    # right 80
 | `compose outer inner`      | thread inner through outer                 |
 | `pipe [l ...]`             | compose left-to-right                      |
 | `focus getF setF`          | lift pure get/set into a lens              |
-| `parse fmap lens`          | apply fmap to focused value                |
+| `parse refine lens`        | apply refine to focused value              |
 | `map f lens`               | transform focused value with pure function |
 | `validate pred`            | left when pred fails, focuses raw value    |
 | `validateWith pred lens`   | left when pred fails, with custom lens     |

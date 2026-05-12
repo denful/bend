@@ -44,7 +44,7 @@ let
     in
     result.lens;
 
-  parse = fmap: lens: adapt lens (s: either.right s) (s: v: v) fmap;
+  parse = refine: lens: adapt lens (s: either.right s) (s: v: v) refine;
 
   focus =
     getF: setF: adapt identity (s: either.right (getF s)) (s: v: { right = setF s v; }) either.right;

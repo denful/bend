@@ -1,17 +1,17 @@
-lens: cmap: smap: fmap: {
+lens: from: back: refine: {
   get =
     t:
     let
-      s = cmap t;
+      s = from t;
       a = lens.get s.right;
     in
-    if s ? right then if a ? right then fmap a.right else a else s;
+    if s ? right then if a ? right then refine a.right else a else s;
 
   set =
     t: b:
     let
-      s = cmap t;
+      s = from t;
       r = lens.set s.right b;
     in
-    if s ? right then if r ? right then smap t r.right else r else s;
+    if s ? right then if r ? right then back t r.right else r else s;
 }

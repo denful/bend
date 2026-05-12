@@ -74,7 +74,7 @@ in
       expected = bend.right 99;
     };
 
-    adapt."test-cmap-right-inner-get-receives-extracted-value" = {
+    adapt."test-from-right-inner-get-receives-extracted-value" = {
       expr =
         let
           lens = bend.adapt bend.identity (s: bend.right s.x) (_s: _v: { x = 0; }) bend.right;
@@ -83,7 +83,7 @@ in
       expected = bend.right 42;
     };
 
-    adapt."test-cmap-left-short-circuits-before-inner-get" = {
+    adapt."test-from-left-short-circuits-before-inner-get" = {
       expr =
         let
           lens = bend.adapt bend.identity (_: bend.left "nope") (_s: _v: { }) bend.right;
@@ -92,7 +92,7 @@ in
       expected = bend.left "nope";
     };
 
-    adapt."test-fmap-transforms-right-value" = {
+    adapt."test-refine-transforms-right-value" = {
       expr =
         let
           lens = bend.adapt bend.identity bend.right (_s: _v: { }) (a: bend.right (a * 2));
@@ -101,7 +101,7 @@ in
       expected = bend.right 10;
     };
 
-    adapt."test-fmap-left-short-circuits-outer-fmap-not-called" = {
+    adapt."test-refine-left-short-circuits-outer-refine-not-called" = {
       expr =
         let
           inner = bend.adapt bend.identity bend.right (_s: _v: { }) (_: bend.left "inner failed");
@@ -111,7 +111,7 @@ in
       expected = bend.left "inner failed";
     };
 
-    adapt."test-smap-writes-inner-back-on-set" = {
+    adapt."test-back-writes-inner-back-on-set" = {
       expr =
         let
           lens = bend.adapt bend.identity (s: bend.right s.x) (s: v: s // { x = v; }) bend.right;
@@ -126,7 +126,7 @@ in
       };
     };
 
-    adapt."test-cmap-left-short-circuits-set" = {
+    adapt."test-from-left-short-circuits-set" = {
       expr =
         let
           lens = bend.adapt bend.identity (_: bend.left "no access") (_s: _v: { }) bend.right;
@@ -140,7 +140,7 @@ in
       expected = bend.right { x = 1; };
     };
 
-    parse."test-applies-fmap-on-right" = {
+    parse."test-applies-refine-on-right" = {
       expr = (bend.parse (a: bend.right (a * 2)) bend.identity).get 5;
       expected = bend.right 10;
     };
