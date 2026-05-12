@@ -9,7 +9,7 @@
 
 > bend and [vic](https://bsky.app/profile/oeiuwq.bsky.social)'s [dendritic libs](https://dendritic.oeiuwq.com) made for you with Love++ and AI--. If you like my work, consider [sponsoring](https://dendritic.oeiuwq.com/sponsor)
 
-# Bend - Data parsing (validation / transformation lenses) for Nix.
+# Bend -- Lens based data parsing: transformation and validation pipelines for Nix.
 
 Bend draws from Haskell profunctor optics, Scala's `Either`, the `adapt` primitive from [denful/nfx](https://github.com/denful/nfx) and parser-combinators.
 
@@ -20,7 +20,7 @@ Every lens either refines its input (`right`) or returns the original unchanged 
 Bend’s combinator names deliberately match parser-combinator vocabulary:
 This is not cosmetic. The names signal that [Bend is a parser combinator library](https://bend.denful.dev/explanation/validation-is-parsing), one that operates on Nix data structures instead of character streams, and that happens to also support bidirectional writes.
 
-**[Read the Documentation Website](https://bend.denfun.dev)**
+## **[Documentation at https://bend.denful.dev](https://bend.denful.dev)**
 
 ## Install
 
@@ -39,9 +39,5 @@ bend = import bend-sources.outPath;
 
 ## [zer0ver](https://0ver.org)
 
-Bend uses 0-based versioning. `0.<binary-epoch-of-release>`
+Bend uses 0-based versioning. `v0.x`
 
-```shell
-# same as `just zerover`
-echo "obase=2; $(date +%s)" | bc
-```
