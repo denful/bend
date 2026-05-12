@@ -31,6 +31,30 @@ let
     set = s: _: bend.right s;
   };
 
+  zip = lensA: lensB: {
+    get =
+      s:
+      let
+        ra = lensA.get s;
+        rb = lensB.get s;
+      in
+      if ra ? left then
+        ra
+      else if rb ? left then
+        rb
+      else
+        bend.right {
+          a = ra.right;
+          b = rb.right;
+        };
+    set =
+      s: v:
+      let
+        ra = lensA.set s v.a;
+      in
+      if ra ? right then lensB.set ra.right v.b else ra;
+  };
+
   transform =
     validators:
     let
@@ -87,6 +111,7 @@ in
   inherit
     sequence
     collect
+    zip
     transform
     defaultTransformError
     transformAllWith

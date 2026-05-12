@@ -1,3 +1,14 @@
+<p align="right">
+  <a href="https://dendritic.oeiuwq.com/sponsor"><img src="https://img.shields.io/badge/sponsor-vic-white?logo=githubsponsors&logoColor=white&labelColor=%23FF0000" alt="Sponsor Vic"/></a>
+  <a href="https://deepwiki.com/denful/bend"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
+  <a href="https://github.com/denful/den/releases"><img src="https://img.shields.io/github/v/release/denful/bend?style=plastic&logo=github&color=purple"/></a>
+  <a href="https://dendritic.oeiuwq.com"><img src="https://img.shields.io/badge/Dendritic-Nix-informational?logo=nixos&logoColor=white" alt="Dendritic Nix"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/denful/bend" alt="License"/></a>
+  <a href="https://github.com/denful/bend/actions"><img src="https://github.com/denful/bend/actions/workflows/test.yml/badge.svg" alt="CI Status"/></a>
+</p>
+
+> bend and [vic](https://bsky.app/profile/oeiuwq.bsky.social)'s [dendritic libs](https://dendritic.oeiuwq.com) made for you with Love++ and AI--. If you like my work, consider [sponsoring](https://dendritic.oeiuwq.com/sponsor)
+
 # Bend
 
 Composable, bidirectional data transformation for Nix. Every lens either refines its input (`right`) or returns the original unchanged (`left`).
@@ -177,6 +188,106 @@ Named pipe steps track the path automatically when a step fails:
 # left { path = ["database" "host"]; got = 5432; }
 ```
 
+## Modifying in place
+
+`over` applies a function to the focused value and returns the updated whole — the third pillar alongside `get` and `set`:
+
+```nix
+bend.over (bend.path ["config" "timeout"]) (n: n * 2) { config = { timeout = 30; }; }
+# right { config = { timeout = 60; }; }
+
+bend.over bend.int (n: n + 1) "not-a-number"
+# left "not-a-number"
+```
+
+`getOr` extracts the raw value without the Either wrapper, returning a default on left:
+
+```nix
+bend.getOr 0 bend.int 42      # 42
+bend.getOr 0 bend.int "bad"   # 0
+```
+
+## Isomorphisms and prisms
+
+`iso f g` is a lens that always succeeds in both directions. `get = right ∘ f`, `set` ignores the source and applies `g`:
+
+```nix
+let celsius = bend.iso (f: (f - 32.0) / 1.8) (c: c * 1.8 + 32.0);
+in celsius.get 212.0   # right 100.0
+   celsius.set 0 100.0 # right 212.0
+```
+
+`prism build match` focuses on one variant of a sum type. `match` returns `left s` for the wrong variant or `right a` for the focused value; `build` reconstructs:
+
+```nix
+let gitUrl = bend.prism
+  (url: { type = "git"; inherit url; })
+  (s: if s.type or "" == "git" then bend.right s.url else bend.left s);
+in
+gitUrl.get { type = "git"; url = "https://example.com"; }  # right "https://example.com"
+gitUrl.get { type = "path"; path = "/foo"; }               # left { type = "path"; ... }
+gitUrl.set { } "https://new.url"                           # right { type = "git"; url = "https://new.url"; }
+```
+
+## Traversals
+
+`mapList` applies a lens to every list element and short-circuits on the first failure:
+
+```nix
+(bend.mapList bend.int).get [ 1 2 3 ]    # right [ 1 2 3 ]
+(bend.mapList bend.int).get [ 1 "x" 3 ]  # left "x"
+```
+
+`each` collects only successes, silently dropping failures:
+
+```nix
+(bend.each bend.int).get [ 1 "x" 3 ]    # right [ 1 3 ]
+```
+
+`zip` focuses two parts of the same source simultaneously:
+
+```nix
+(bend.zip (bend.attr "x") (bend.attr "y")).get { x = 1; y = 2; z = 3; }
+# right { a = 1; b = 2; }
+
+(bend.zip (bend.attr "x") (bend.attr "y")).set { x = 0; y = 0; z = 3; } { a = 10; b = 20; }
+# right { x = 10; y = 20; z = 3; }
+```
+
+## Conditional application
+
+`when pred lens` applies a lens only when the predicate passes on the source, otherwise returns `right s` unchanged:
+
+```nix
+let maybeValidate = bend.when (v: v != null) bend.str;
+in
+maybeValidate.get null    # right null   (skipped)
+maybeValidate.get "hi"    # right "hi"
+maybeValidate.get 42      # left 42
+```
+
+`unless pred lens` is the inverse — applies when the predicate fails.
+
+## Nullable and blank
+
+`nullable lens` short-circuits on `null`, letting it pass as `right null`. Non-null values go through the inner lens:
+
+```nix
+(bend.nullable bend.str).get null    # right null
+(bend.nullable bend.str).get "hi"    # right "hi"
+(bend.nullable bend.str).get 42      # left 42
+```
+
+`nonBlank` accepts non-empty strings only. `attrOr "k" def` reads a key with a fallback default:
+
+```nix
+bend.nonBlank.get ""            # left ""
+bend.nonBlank.get "hello"       # right "hello"
+
+(bend.attrOr "port" 8080).get { }          # right 8080
+(bend.attrOr "port" 8080).get { port = 3000; }  # right 3000
+```
+
 ## Recovery and union types
 
 `withDefault` replaces a left with a fixed value. `recover` receives the failed value and can attempt new logic:
@@ -216,44 +327,59 @@ in (bend.ensure validPort "invalid port" bend.int).get 80    # right 80
 
 **Primitives**
 
-| Lens        | right when              | left when          |
-|-------------|-------------------------|--------------------|
-| `identity`  | always                  | never              |
-| `attr "k"`  | key present             | key missing        |
-| `path [ks]` | all keys present        | any key missing    |
-| `int`       | value is integer        | not integer        |
-| `str`       | value is string         | not string         |
-| `bool`      | value is bool           | not bool           |
-| `list`      | value is list           | not list           |
-| `nonEmpty`  | list non-empty          | empty list         |
-| `index n`   | n in bounds             | out of bounds      |
+| Lens           | right when              | left when          |
+|----------------|-------------------------|--------------------|
+| `identity`     | always                  | never              |
+| `attr "k"`     | key present             | key missing        |
+| `attrOr "k" d` | always (`d` if missing) | never              |
+| `path [ks]`    | all keys present        | any key missing    |
+| `int`          | value is integer        | not integer        |
+| `float`        | value is float          | not float          |
+| `number`       | value is int or float   | neither            |
+| `str`          | value is string         | not string         |
+| `nonBlank`     | non-empty string        | empty or non-string|
+| `bool`         | value is bool           | not bool           |
+| `list`         | value is list           | not list           |
+| `nonEmpty`     | list non-empty          | empty list         |
+| `index n`      | n in bounds             | out of bounds      |
 
 **Combinators**
 
-| Combinator                 | Effect                                     |
-|----------------------------|--------------------------------------------|
-| `compose outer inner`      | thread inner through outer                 |
-| `pipe [l ...]`             | compose left-to-right                      |
-| `focus getF setF`          | lift pure get/set into a lens              |
-| `parse refine lens`        | apply refine to focused value              |
-| `map f lens`               | transform focused value with pure function |
-| `validate pred`            | left when pred fails, focuses raw value    |
-| `validateWith pred lens`   | left when pred fails, with custom lens     |
-| `withDefault d lens`       | replace left with `right d`                |
-| `recover f lens`           | call f on left to attempt recovery         |
-| `alt lensA lensB`          | try lensA, fall back to lensB              |
-| `oneOf [l ...]`            | try each lens in order                     |
-| `apply fn`                 | extract fn args from input attrset         |
-| `sequence [l ...]`         | collect lens results into a list           |
-| `collect [k ...]`          | extract named fields into attrset          |
-| `transform {k = l; ...}`   | validate each field, short-circuit         |
-| `transformAll {k = l; ...}`| validate each field, collect all failures  |
-| `mapValues lens`           | apply lens to every value in attrset       |
-| `bimap fL fR lens`         | map both branches                          |
-| `lmap f lens`              | map left branch only                       |
-| `rmap f lens`              | map right branch only                      |
-| `label msg lens`           | replace left with fixed message            |
-| `annotate path lens`       | wrap left with `{ path; got }`             |
-| `region ctx lens`          | wrap left with `{ context; inner }`        |
-| `ensure pred msg lens`     | validate and label in one step             |
-| `debug label lens`         | trace values to stderr, transparent        |
+| Combinator                  | Effect                                              |
+|-----------------------------|-----------------------------------------------------|
+| `compose outer inner`       | thread inner through outer                          |
+| `pipe [l ...]`              | compose left-to-right                               |
+| `focus getF setF`           | lift pure get/set into a lens                       |
+| `iso f g`                   | isomorphism: `get = right ∘ f`, set ignores source  |
+| `prism build match`         | sum-type focus: match extracts, build reconstructs  |
+| `parse refine lens`         | apply refine to focused value                       |
+| `map f lens`                | transform focused value with pure function          |
+| `over lens f s`             | modify focused value in-place, return updated whole |
+| `getOr def lens s`          | extract raw value or return `def` on left           |
+| `validate pred`             | left when pred fails, focuses raw value             |
+| `validateWith pred lens`    | left when pred fails, with custom lens              |
+| `nullable lens`             | pass `null` through as `right null`, else apply lens|
+| `withDefault d lens`        | replace left with `right d`                         |
+| `when pred lens`            | apply lens only when pred passes on source          |
+| `unless pred lens`          | apply lens only when pred fails on source           |
+| `recover f lens`            | call f on left to attempt recovery                  |
+| `alt lensA lensB`           | try lensA, fall back to lensB                       |
+| `oneOf [l ...]`             | try each lens in order                              |
+| `apply fn`                  | extract fn args from input attrset                  |
+| `sequence [l ...]`          | collect lens results into a list                    |
+| `collect [k ...]`           | extract named fields into attrset                   |
+| `zip lensA lensB`           | focus two parts of same source into `{ a; b }`      |
+| `transform {k = l; ...}`    | validate each field, short-circuit                  |
+| `transformAll {k = l; ...}` | validate each field, collect all failures           |
+| `mapValues lens`            | apply lens to every value in attrset                |
+| `mapList lens`              | apply lens to every list element, short-circuit     |
+| `each lens`                 | apply lens to every list element, collect successes |
+| `mapKeys f`                 | rename attrset keys with f                          |
+| `bimap fL fR lens`          | map both branches                                   |
+| `lmap f lens`               | map left branch only                                |
+| `rmap f lens`               | map right branch only                               |
+| `label msg lens`            | replace left with fixed message                     |
+| `annotate path lens`        | wrap left with `{ path; got }`                      |
+| `region ctx lens`           | wrap left with `{ context; inner }`                 |
+| `ensure pred msg lens`      | validate and label in one step                      |
+| `debug label lens`          | trace values to stderr, transparent                 |

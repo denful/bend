@@ -43,6 +43,13 @@ let
 
   focus =
     getF: setF: bend.adapt identity (s: bend.right (getF s)) (s: v: bend.right (setF s v)) bend.right;
+
+  iso = f: g: focus f (_: g);
+
+  prism = build: match: {
+    get = match;
+    set = _: v: bend.right (build v);
+  };
 in
 {
   inherit
@@ -51,5 +58,7 @@ in
     pipe
     parse
     focus
+    iso
+    prism
     ;
 }

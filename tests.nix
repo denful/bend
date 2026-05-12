@@ -1559,6 +1559,284 @@ in
       expected = bend.left "must be string or int";
     };
 
+    over."test-over-modifies-focused-value" = {
+      expr = bend.over (bend.attr "x") (n: n * 2) {
+        x = 5;
+        y = 1;
+      };
+      expected = bend.right {
+        x = 10;
+        y = 1;
+      };
+    };
+    over."test-over-propagates-left" = {
+      expr = bend.over (bend.attr "x") (n: n * 2) { y = 1; };
+      expected = bend.left { y = 1; };
+    };
+
+    getOr."test-getOr-returns-raw-right-value" = {
+      expr = bend.getOr 0 bend.int 42;
+      expected = 42;
+    };
+    getOr."test-getOr-returns-default-on-left" = {
+      expr = bend.getOr 0 bend.int "bad";
+      expected = 0;
+    };
+
+    when."test-when-applies-lens-if-pred-passes" = {
+      expr = (bend.when builtins.isInt bend.int).get 5;
+      expected = bend.right 5;
+    };
+    when."test-when-passes-through-if-pred-fails" = {
+      expr = (bend.when builtins.isInt bend.int).get "hello";
+      expected = bend.right "hello";
+    };
+    when."test-when-set-applies-if-pred-passes" = {
+      expr = (bend.when (s: s ? x) (bend.attr "x")).set { x = 1; } 99;
+      expected = bend.right { x = 99; };
+    };
+    when."test-when-set-skips-if-pred-fails" = {
+      expr = (bend.when (s: s ? x) (bend.attr "x")).set { y = 2; } 99;
+      expected = bend.right { y = 2; };
+    };
+
+    unless."test-unless-passes-through-if-pred-passes" = {
+      expr = (bend.unless builtins.isInt bend.str).get 5;
+      expected = bend.right 5;
+    };
+    unless."test-unless-applies-lens-if-pred-fails" = {
+      expr = (bend.unless builtins.isInt bend.str).get "hello";
+      expected = bend.right "hello";
+    };
+
+    iso."test-iso-get-applies-forward-fn" = {
+      expr = (bend.iso (x: x + 1) (x: x - 1)).get 5;
+      expected = bend.right 6;
+    };
+    iso."test-iso-set-applies-backward-fn-ignores-source" = {
+      expr = (bend.iso (x: x + 1) (x: x - 1)).set 999 10;
+      expected = bend.right 9;
+    };
+
+    prism."test-prism-get-right-on-matching-variant" = {
+      expr =
+        let
+          gitUrl = bend.prism (url: {
+            type = "git";
+            inherit url;
+          }) (s: if s.type or "" == "git" then bend.right s.url else bend.left s);
+        in
+        gitUrl.get {
+          type = "git";
+          url = "https://example.com";
+        };
+      expected = bend.right "https://example.com";
+    };
+    prism."test-prism-get-left-on-wrong-variant" = {
+      expr =
+        let
+          gitUrl = bend.prism (url: {
+            type = "git";
+            inherit url;
+          }) (s: if s.type or "" == "git" then bend.right s.url else bend.left s);
+        in
+        gitUrl.get {
+          type = "path";
+          path = "/foo";
+        };
+      expected = bend.left {
+        type = "path";
+        path = "/foo";
+      };
+    };
+    prism."test-prism-set-builds-variant-ignoring-source" = {
+      expr =
+        let
+          gitUrl = bend.prism (url: {
+            type = "git";
+            inherit url;
+          }) (s: if s.type or "" == "git" then bend.right s.url else bend.left s);
+        in
+        gitUrl.set { } "https://new.url";
+      expected = bend.right {
+        type = "git";
+        url = "https://new.url";
+      };
+    };
+
+    float."test-float-accepts-float" = {
+      expr = bend.float.get 1.5;
+      expected = bend.right 1.5;
+    };
+    float."test-float-rejects-int" = {
+      expr = bend.float.get 1;
+      expected = bend.left 1;
+    };
+
+    number."test-number-accepts-int" = {
+      expr = bend.number.get 42;
+      expected = bend.right 42;
+    };
+    number."test-number-accepts-float" = {
+      expr = bend.number.get 3.14;
+      expected = bend.right 3.14;
+    };
+    number."test-number-rejects-string" = {
+      expr = bend.number.get "42";
+      expected = bend.left "42";
+    };
+
+    nonBlank."test-nonBlank-accepts-non-empty-string" = {
+      expr = bend.nonBlank.get "hello";
+      expected = bend.right "hello";
+    };
+    nonBlank."test-nonBlank-rejects-empty-string" = {
+      expr = bend.nonBlank.get "";
+      expected = bend.left "";
+    };
+    nonBlank."test-nonBlank-rejects-non-string" = {
+      expr = bend.nonBlank.get 42;
+      expected = bend.left 42;
+    };
+
+    nullable."test-nullable-passes-null-as-right-null" = {
+      expr = (bend.nullable bend.str).get null;
+      expected = bend.right null;
+    };
+    nullable."test-nullable-applies-inner-lens-on-non-null" = {
+      expr = (bend.nullable bend.str).get "hello";
+      expected = bend.right "hello";
+    };
+    nullable."test-nullable-propagates-inner-left" = {
+      expr = (bend.nullable bend.str).get 42;
+      expected = bend.left 42;
+    };
+    nullable."test-nullable-set-null-returns-right-null" = {
+      expr = (bend.nullable bend.str).set "old" null;
+      expected = bend.right null;
+    };
+
+    attrOr."test-attrOr-returns-value-when-present" = {
+      expr = (bend.attrOr "x" 99).get { x = 1; };
+      expected = bend.right 1;
+    };
+    attrOr."test-attrOr-returns-default-when-absent" = {
+      expr = (bend.attrOr "x" 99).get { y = 1; };
+      expected = bend.right 99;
+    };
+
+    mapList."test-mapList-all-pass" = {
+      expr = (bend.mapList bend.int).get [
+        1
+        2
+        3
+      ];
+      expected = bend.right [
+        1
+        2
+        3
+      ];
+    };
+    mapList."test-mapList-short-circuits-on-first-fail" = {
+      expr = (bend.mapList bend.int).get [
+        1
+        "x"
+        3
+      ];
+      expected = bend.left "x";
+    };
+    mapList."test-mapList-empty-list" = {
+      expr = (bend.mapList bend.int).get [ ];
+      expected = bend.right [ ];
+    };
+    mapList."test-mapList-rejects-non-list" = {
+      expr = (bend.mapList bend.int).get "not-a-list";
+      expected = bend.left "not-a-list";
+    };
+
+    each."test-each-collects-only-rights" = {
+      expr = (bend.each bend.int).get [
+        1
+        "x"
+        3
+      ];
+      expected = bend.right [
+        1
+        3
+      ];
+    };
+    each."test-each-empty-list" = {
+      expr = (bend.each bend.int).get [ ];
+      expected = bend.right [ ];
+    };
+    each."test-each-all-fail-returns-empty" = {
+      expr = (bend.each bend.int).get [
+        "a"
+        "b"
+      ];
+      expected = bend.right [ ];
+    };
+    each."test-each-rejects-non-list" = {
+      expr = (bend.each bend.int).get 42;
+      expected = bend.left 42;
+    };
+
+    mapKeys."test-mapKeys-renames-all-keys" = {
+      expr = (bend.mapKeys (k: k + "_ok")).get {
+        a = 1;
+        b = 2;
+      };
+      expected = bend.right {
+        a_ok = 1;
+        b_ok = 2;
+      };
+    };
+    mapKeys."test-mapKeys-empty-attrset" = {
+      expr = (bend.mapKeys (k: k + "_ok")).get { };
+      expected = bend.right { };
+    };
+    mapKeys."test-mapKeys-rejects-non-attrset" = {
+      expr = (bend.mapKeys (k: k + "_ok")).get "bad";
+      expected = bend.left "bad";
+    };
+
+    zip."test-zip-get-combines-two-focused-values" = {
+      expr = (bend.zip (bend.attr "x") (bend.attr "y")).get {
+        x = 1;
+        y = 2;
+      };
+      expected = bend.right {
+        a = 1;
+        b = 2;
+      };
+    };
+    zip."test-zip-get-left-if-first-lens-fails" = {
+      expr = (bend.zip (bend.attr "x") (bend.attr "y")).get { y = 2; };
+      expected = bend.left { y = 2; };
+    };
+    zip."test-zip-get-left-if-second-lens-fails" = {
+      expr = (bend.zip (bend.attr "x") (bend.attr "y")).get { x = 1; };
+      expected = bend.left { x = 1; };
+    };
+    zip."test-zip-set-writes-both-fields" = {
+      expr =
+        (bend.zip (bend.attr "x") (bend.attr "y")).set
+          {
+            x = 0;
+            y = 0;
+            z = 3;
+          }
+          {
+            a = 10;
+            b = 20;
+          };
+      expected = bend.right {
+        x = 10;
+        y = 20;
+        z = 3;
+      };
+    };
+
     debug."test-debug-transparent-right" = {
       expr = (bend.debug "myLabel" bend.int).get 5;
       expected = bend.right 5;

@@ -10,6 +10,8 @@ let
   str = validate builtins.isString;
   bool = validate builtins.isBool;
   list = validate builtins.isList;
+  float = validate builtins.isFloat;
+  number = bend.alt int float;
 
   nonEmpty = bend.adapt bend.identity bend.right (_: ne: bend.right ([ ne.head ] ++ ne.tail)) (
     l:
@@ -21,6 +23,16 @@ let
         tail = builtins.tail l;
       }
   );
+
+  nonBlank = bend.pipe [
+    str
+    (validate (s: s != ""))
+  ];
+
+  nullable = lens: {
+    get = s: if s == null then bend.right null else lens.get s;
+    set = s: v: if v == null then bend.right null else lens.set s v;
+  };
 
   andP =
     p: q: v:
@@ -39,7 +51,11 @@ in
     str
     bool
     list
+    float
+    number
     nonEmpty
+    nonBlank
+    nullable
     andP
     orP
     notP
