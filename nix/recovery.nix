@@ -1,7 +1,3 @@
-# Recovery and alternative combinators
-# recover: transform left into a new Either (like Either.recoverWith)
-# alt: try lensA; on left try lensB on original input
-# oneOf: first lens returning right wins
 either:
 let
   recover = f: lens: {

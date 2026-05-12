@@ -7,9 +7,6 @@ let
 
   compose = outer: inner: adapt inner outer.get outer.set either.right;
 
-  # pipe: accepts lens | { name; lens } | { name; lens; errorFn }
-  # Named steps auto-annotate left with accumulated path.
-  # Plain lens steps pass through unchanged (backward compatible).
   pipe =
     steps:
     let
@@ -19,9 +16,11 @@ let
           isNamed = builtins.isAttrs step && step ? lens;
           innerLens = if isNamed then step.lens else step;
           path = acc.path ++ (if isNamed then [ step.name ] else [ ]);
-          errorFn = if isNamed then step.errorFn or defaultPathError else null;
           wrapped =
             if isNamed then
+              let
+                errorFn = step.errorFn or defaultPathError;
+              in
               {
                 get =
                   s:

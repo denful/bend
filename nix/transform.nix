@@ -1,5 +1,3 @@
-# Lens-level bifunctor: map left and/or right branches of lens.get
-# set always delegates to inner lens unchanged
 let
   bimap = fLeft: fRight: lens: {
     get =

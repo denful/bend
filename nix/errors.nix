@@ -1,8 +1,3 @@
-# Error shaping combinators — all built on lmap
-# label: replace left with static message
-# region: wrap left with outer context (stackable)
-# annotate: wrap left with {path; got} (circe cursor pattern)
-# ensure: inline predicate check returning labeled error
 lmap:
 let
   defaultPathError = path: got: { inherit path got; };

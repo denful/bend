@@ -1,6 +1,3 @@
-# debug: transparent lens wrapper that traces intermediate get results
-# Use to inspect pipeline values without changing behavior
-# Output goes to stderr: "bend.debug [label]: <json>"
 let
   debug = label: lens: {
     get =

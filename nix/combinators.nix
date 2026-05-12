@@ -1,6 +1,5 @@
 either:
 let
-  # Absorb left branch, replacing with default: partial lens → total lens
   withDefault = def: lens: {
     get =
       s:

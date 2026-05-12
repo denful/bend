@@ -1,6 +1,5 @@
 either: adapt: identity: attr:
 let
-  # Focus on list element by index: out of bounds → left [], present → right value
   index =
     n:
     adapt identity (s: either.right s) (s: v: s) (
@@ -11,29 +10,22 @@ let
         either.left l
     );
 
-  # Apply lens to each value in object: validates all values, returns transformed object
-  # Returns left on first field that fails validation
   mapValues = lens: {
     get =
       obj:
-      let
-        fieldNames = builtins.attrNames obj;
-        results = builtins.foldl' (
-          accEither: name:
-          if accEither ? left then
-            accEither
+      builtins.foldl' (
+        accEither: name:
+        if accEither ? left then
+          accEither
+        else
+          let
+            fieldResult = lens.get obj.${name};
+          in
+          if fieldResult ? left then
+            fieldResult
           else
-            let
-              fieldResult = lens.get obj.${name};
-            in
-            if fieldResult ? left then
-              fieldResult
-            else
-              either.mapR (acc: acc // { ${name} = fieldResult.right; }) accEither
-        ) (either.right { }) fieldNames;
-      in
-      results;
-
+            either.mapR (acc: acc // { ${name} = fieldResult.right; }) accEither
+      ) (either.right { }) (builtins.attrNames obj);
     set = obj: newValues: newValues;
   };
 in

@@ -1,9 +1,3 @@
-# Single combinator: adapt a lens with focus transformation and value refinement
-# lens  - inner lens to adapt
-# cmap  - contravariant focus: extract inner from outer (can fail)
-# smap  - write-back: merge inner result into outer (pure, never fails)
-# fmap  - covariant parse: refine focused value (can fail)
-# Result: new lens focusing through outer structure into inner value
 lens: cmap: smap: fmap: {
   get =
     t:
