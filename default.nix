@@ -1,32 +1,16 @@
 let
-  bend =
-    (import ./nix/either.nix bend)
-    // (import ./nix/adapt.nix bend)
-    // (import ./nix/transform.nix bend)
-    // (import ./nix/errors.nix bend)
-    // (import ./nix/core.nix bend)
-    // (import ./nix/attr.nix bend)
-    // (import ./nix/parsers.nix bend)
-    // (import ./nix/combinators.nix bend)
-    // (import ./nix/sequence.nix bend)
-    // (import ./nix/apply.nix bend)
-    // (import ./nix/extras.nix bend)
-    // (import ./nix/recovery.nix bend)
-    // (import ./nix/debug.nix bend)
-    // {
-      chainable =
-        let
-          go =
-            lens:
-            lens
-            // {
-              __functor =
-                _: arg: if builtins.isFunction arg then go (bend.compose lens (bend.apply arg)) else lens.get arg;
-            };
-        in
-        go;
+  # Import all .nix files from nix/ directory
+  readDirImports =
+    dir:
+    let
+      files = builtins.readDir dir;
+      fileList = builtins.filter (name: builtins.match ".*\\.nix$" name != null) (
+        builtins.attrNames files
+      );
+      imports = builtins.map (name: import (dir + "/${name}") bend) fileList;
+    in
+    builtins.foldl' (acc: val: acc // val) { } imports;
 
-      __functor = _: fn: bend.chainable (bend.apply fn);
-    };
+  bend = readDirImports ./nix // (import ./nix/functor.nix bend);
 in
 bend
