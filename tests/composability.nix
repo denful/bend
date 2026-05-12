@@ -4,10 +4,9 @@ bend: {
       let
         # Partially apply adapt with from and back functions
         # Returns lens -> lens transformer
-        adaptValidator = bend.adapt
-          (s: if builtins.isInt s then bend.right s else bend.left s)
-          (_s: _v: { })
-          (x: bend.right (x * 2));
+        adaptValidator = bend.adapt (s: if builtins.isInt s then bend.right s else bend.left s) (
+          _s: _v: { }
+        ) (x: bend.right (x * 2));
         # Apply to identity lens
         lens = adaptValidator bend.identity;
       in
@@ -19,17 +18,17 @@ bend: {
     expr =
       let
         # Validator that transforms refine function
-        validator = bend.adapt
-          bend.right
-          (_s: _v: { })
-          (x: bend.right (x + 100));
+        validator = bend.adapt bend.right (_s: _v: { }) (x: bend.right (x + 100));
         # Apply to different extraction lenses
         lens1 = validator bend.identity;
         lens2 = validator (bend.attr "x");
       in
       {
         one = lens1.get 5;
-        two = lens2.get { x = 3; y = 10; };
+        two = lens2.get {
+          x = 3;
+          y = 10;
+        };
       };
     expected = {
       one = bend.right 105;
@@ -48,12 +47,26 @@ bend: {
         doubleArray0 = double (bend.index 0);
       in
       {
-        x = doubleX { x = 5; y = 1; };
-        arr = doubleArray0 [ 10 20 30 ];
+        x = doubleX {
+          x = 5;
+          y = 1;
+        };
+        arr = doubleArray0 [
+          10
+          20
+          30
+        ];
       };
     expected = {
-      x = bend.right { x = 10; y = 1; };
-      arr = bend.right [ 20 20 30 ];
+      x = bend.right {
+        x = 10;
+        y = 1;
+      };
+      arr = bend.right [
+        20
+        20
+        30
+      ];
     };
   };
 
@@ -72,7 +85,11 @@ bend: {
       let
         # Use path for multi-level access instead of nested compose
         # path handles the composition internally
-        deep = bend.path [ "level1" "level2" "level3" ];
+        deep = bend.path [
+          "level1"
+          "level2"
+          "level3"
+        ];
       in
       deep.get {
         level1 = {
