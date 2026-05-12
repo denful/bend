@@ -13,12 +13,12 @@ import { Aside } from '@astrojs/starlight/components';
 
 Replace `left` with `right default`.
 
-## `over lens f s`
+## `over f lens s`
 
 Apply `f` to focused value in-place; return updated whole.
 
 ```nix
-bend.over (bend.path ["config" "timeout"]) (n: n * 2) { config = { timeout = 30; }; }
+bend.over (n: n * 2) (bend.path ["config" "timeout"]) { config = { timeout = 30; }; }
 # right { config = { timeout = 60; }; }
 ```
 

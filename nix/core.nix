@@ -5,7 +5,7 @@ let
     set = _: bend.right;
   };
 
-  compose = outer: inner: bend.adapt inner outer.get outer.set bend.right;
+  compose = outer: inner: bend.adapt outer.get outer.set bend.right inner;
 
   pipe =
     steps:
@@ -39,10 +39,10 @@ let
     in
     result.lens;
 
-  parse = refine: lens: bend.adapt lens bend.right (_: v: v) refine;
+  parse = refine: lens: bend.adapt bend.right (_: v: v) refine lens;
 
   focus =
-    getF: setF: bend.adapt identity (s: bend.right (getF s)) (s: v: bend.right (setF s v)) bend.right;
+    getF: setF: bend.adapt (s: bend.right (getF s)) (s: v: bend.right (setF s v)) bend.right identity;
 
   iso = f: g: focus f (_: g);
 

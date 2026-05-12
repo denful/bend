@@ -12,7 +12,7 @@ bend: {
   parse."test-passes-left-unchanged" = {
     expr =
       let
-        failing = bend.adapt bend.identity (_: bend.left 99) (_: _: { }) bend.right;
+        failing = bend.adapt (_: bend.left 99) (_: _: { }) bend.right bend.identity;
       in
       (bend.parse (a: bend.right (a * 2)) failing).get 5;
     expected = bend.left 99;

@@ -1,6 +1,6 @@
 bend: {
   over."test-over-modifies-focused-value" = {
-    expr = bend.over (bend.attr "x") (n: n * 2) {
+    expr = bend.over (n: n * 2) (bend.attr "x") {
       x = 5;
       y = 1;
     };
@@ -10,7 +10,7 @@ bend: {
     };
   };
   over."test-over-propagates-left" = {
-    expr = bend.over (bend.attr "x") (n: n * 2) { y = 1; };
+    expr = bend.over (n: n * 2) (bend.attr "x") { y = 1; };
     expected = bend.left { y = 1; };
   };
 

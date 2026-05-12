@@ -9,20 +9,20 @@ import { Aside } from '@astrojs/starlight/components';
 [`github.com/denful/bend`](https://github.com/denful/bend)
 </Aside>
 
-## `adapt lens from back refine`
+## `adapt from back refine lens`
 
 The sole primitive everything composes from.
 
 **Parameters:**
-- `lens` — inner lens to apply to the focused value
 - `from` — extract inner source from outer (must return Either)
 - `back` — write inner result back into outer state
 - `refine` — transform the focused value (must return Either)
+- `lens` — inner lens to apply to the focused value
 
 **Returns:** A lens with `get` and `set` operations.
 
 ```nix
-adapt identity (s: s.x) (s: v: s // { x = v; }) (v: bend.right (v + 1))
+adapt (s: s.x) (s: v: s // { x = v; }) (v: bend.right (v + 1)) identity
 ```
 
 **How it works:**

@@ -2,9 +2,9 @@ bend:
 let
   attr =
     name:
-    bend.adapt bend.identity (s: if s ? ${name} then bend.right s.${name} else bend.left s) (
+    bend.adapt (s: if s ? ${name} then bend.right s.${name} else bend.left s) (
       s: v: bend.right (s // { ${name} = v; })
-    ) bend.right;
+    ) bend.right bend.identity;
 
   attrOr = name: def: bend.option def (attr name);
 

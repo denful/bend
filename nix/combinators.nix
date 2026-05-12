@@ -11,7 +11,7 @@ let
   };
 
   over =
-    lens: f: s:
+    f: lens: s:
     let
       r = lens.get s;
     in

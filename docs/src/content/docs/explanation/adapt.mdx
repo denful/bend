@@ -15,17 +15,17 @@ No other combinator in Bend is axiomatic. Every function in `bend.lib` is derive
 ## The signature
 
 ```nix
-adapt lens from back refine
+adapt from back refine lens
 ```
 
 Four arguments:
 
 | Argument | Type | Role |
 |----------|------|------|
-| `lens` | `{ get; set }` | inner lens to delegate to |
 | `from` | `outer → Either inner` | extract inner source from outer |
 | `back` | `outer → inner → Either outer` | write inner result back into outer |
 | `refine` | `inner → Either result` | transform the focused value |
+| `lens` | `{ get; set }` | inner lens to delegate to |
 
 `adapt` returns a new lens `{ get; set }` over the outer type.
 
@@ -76,10 +76,11 @@ Not built with `adapt` directly — it *is* the base case. `adapt` delegates to 
 ### `attr "name"`
 
 ```nix
-attr name = adapt identity
+attr name = adapt
   (s: if s ? ${name} then right s.${name} else left s)
   (s: v: right (s // { ${name} = v; }))
-  right;
+  right
+  identity;
 ```
 
 `from` extracts the field or short-circuits. `back` merges the new value back. `refine = right` (no further transformation).
@@ -87,7 +88,7 @@ attr name = adapt identity
 ### `parse refine lens`
 
 ```nix
-parse refine lens = adapt lens right (_: v: v) refine;
+parse refine lens = adapt right (_: v: v) refine lens;
 ```
 
 `from = right` (identity extraction). `back` discards the source — parse results don't write back through the source, they produce a new value. `refine` does the parsing work.
@@ -95,7 +96,7 @@ parse refine lens = adapt lens right (_: v: v) refine;
 ### `compose outer inner`
 
 ```nix
-compose outer inner = adapt inner outer.get outer.set right;
+compose outer inner = adapt outer.get outer.set right inner;
 ```
 
 `from = outer.get` (navigate with the outer lens). `back = outer.set` (write back with outer). `refine = right` (no extra transformation). The inner lens handles its own navigation.

@@ -1,6 +1,6 @@
 _: {
   adapt =
-    lens: from: back: refine:
+    from: back: refine: lens:
     let
       run =
         t: op: finish:

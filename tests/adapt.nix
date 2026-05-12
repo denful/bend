@@ -12,7 +12,7 @@ bend: {
   adapt."test-from-right-inner-get-receives-extracted-value" = {
     expr =
       let
-        lens = bend.adapt bend.identity (s: bend.right s.x) (_s: _v: { x = 0; }) bend.right;
+        lens = bend.adapt (s: bend.right s.x) (_s: _v: { x = 0; }) bend.right bend.identity;
       in
       lens.get { x = 42; };
     expected = bend.right 42;
@@ -21,7 +21,7 @@ bend: {
   adapt."test-from-left-short-circuits-before-inner-get" = {
     expr =
       let
-        lens = bend.adapt bend.identity (_: bend.left "nope") (_s: _v: { }) bend.right;
+        lens = bend.adapt (_: bend.left "nope") (_s: _v: { }) bend.right bend.identity;
       in
       lens.get 5;
     expected = bend.left "nope";
@@ -30,7 +30,7 @@ bend: {
   adapt."test-refine-transforms-right-value" = {
     expr =
       let
-        lens = bend.adapt bend.identity bend.right (_s: _v: { }) (a: bend.right (a * 2));
+        lens = bend.adapt bend.right (_s: _v: { }) (a: bend.right (a * 2)) bend.identity;
       in
       lens.get 5;
     expected = bend.right 10;
@@ -39,8 +39,8 @@ bend: {
   adapt."test-refine-left-short-circuits-outer-refine-not-called" = {
     expr =
       let
-        inner = bend.adapt bend.identity bend.right (_s: _v: { }) (_: bend.left "inner failed");
-        chained = bend.adapt inner bend.right (_s: _v: { }) (_: bend.right "should not reach");
+        inner = bend.adapt bend.right (_s: _v: { }) (_: bend.left "inner failed") bend.identity;
+        chained = bend.adapt bend.right (_s: _v: { }) (_: bend.right "should not reach") inner;
       in
       chained.get 5;
     expected = bend.left "inner failed";
@@ -49,7 +49,7 @@ bend: {
   adapt."test-back-writes-inner-back-on-set" = {
     expr =
       let
-        lens = bend.adapt bend.identity (s: bend.right s.x) (s: v: s // { x = v; }) bend.right;
+        lens = bend.adapt (s: bend.right s.x) (s: v: s // { x = v; }) bend.right bend.identity;
       in
       lens.set {
         x = 1;
@@ -64,7 +64,7 @@ bend: {
   adapt."test-from-left-short-circuits-set" = {
     expr =
       let
-        lens = bend.adapt bend.identity (_: bend.left "no access") (_s: _v: { }) bend.right;
+        lens = bend.adapt (_: bend.left "no access") (_s: _v: { }) bend.right bend.identity;
       in
       lens.set { } 99;
     expected = bend.left "no access";

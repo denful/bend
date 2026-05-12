@@ -56,11 +56,11 @@ This is not cosmetic. The names signal that [Bend is a parser combinator library
 Everything in Bend composes from a single combinator:
 
 ```nix
-adapt lens from back refine
-# lens    — inner lens
+adapt from back refine lens
 # from    — extract inner source from outer
 # back    — write inner result back into outer
 # refine  — refine focused value
+# lens    — inner lens
 ```
 
 ### Either

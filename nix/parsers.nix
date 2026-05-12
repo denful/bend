@@ -13,7 +13,7 @@ let
   float = satisfy builtins.isFloat;
   number = bend.alt int float;
 
-  nonEmpty = bend.adapt bend.identity bend.right (_: ne: bend.right ([ ne.head ] ++ ne.tail)) (
+  nonEmpty = bend.adapt bend.right (_: ne: bend.right ([ ne.head ] ++ ne.tail)) (
     l:
     if l == [ ] then
       bend.left l
@@ -22,7 +22,7 @@ let
         head = builtins.head l;
         tail = builtins.tail l;
       }
-  );
+  ) bend.identity;
 
   nonBlank = bend.pipe [
     str
