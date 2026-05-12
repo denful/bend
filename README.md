@@ -9,7 +9,7 @@
 
 > bend and [vic](https://bsky.app/profile/oeiuwq.bsky.social)'s [dendritic libs](https://dendritic.oeiuwq.com) made for you with Love++ and AI--. If you like my work, consider [sponsoring](https://dendritic.oeiuwq.com/sponsor)
 
-# Bend - Data parsing (validation / transformation) pipelines for Nix.
+# Bend - Data parsing (validation / transformation lenses) for Nix.
 
 Bend draws from Haskell profunctor optics, Scala's `Either`, the `adapt` primitive from [denful/nfx](https://github.com/denful/nfx) and parser-combinators.
 
