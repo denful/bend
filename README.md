@@ -18,7 +18,7 @@ adapt lens from back refine
 # refine  — refine focused value
 ```
 
-## Either
+## [Either](nix/either.nix)
 
 ```nix
 bend.right 42        # { right = 42; }
