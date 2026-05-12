@@ -18,8 +18,6 @@ adapt lens cmap smap fmap
 # fmap  — refine focused value (can fail -> left)
 ```
 
-Everything else is derived from it.
-
 ## Either
 
 ```nix
