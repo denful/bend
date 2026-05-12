@@ -11,6 +11,6 @@ let
     in
     builtins.foldl' (acc: val: acc // val) { } imports;
 
-  bend = readDirImports ./nix // (import ./nix/functor.nix bend);
+  bend = readDirImports ./nix;
 in
 bend
