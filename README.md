@@ -6,7 +6,7 @@ Bend draws from Haskell profunctor optics, Scala's `Either`, and the `adapt` pri
 
 The core idea is [Parse, Don't Validate](https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/): a validator for non-empty lists that returns `true` is discarding the proof it just computed; instead if the function returns `left empty` or `right { head; tail; }`, the data structure *is* the proof.
 
-## The primitive
+## The [`adapt`](nix/adapt.nix) primitive
 
 Everything composes from a single combinator:
 
