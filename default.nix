@@ -38,6 +38,7 @@ let
     inherit (parsers)
       map
       validate
+      validateWith
       int
       str
       bool

@@ -40,7 +40,7 @@ Both `left` and `right` hold structured data, the library provides combinators f
 let lens = bend.pipe [
   (bend.attr "name")
   bend.str
-  (bend.validate (s: s != "") bend.identity)
+  (bend.validate (s: s != ""))
 ];
 in
 lens.get { name = "alice"; }   # right "alice"
@@ -230,7 +230,8 @@ in (bend.ensure validPort "invalid port" bend.int).get 80    # right 80
 | `focus getF setF`          | lift pure get/set into a lens              |
 | `parse fmap lens`          | apply fmap to focused value                |
 | `map f lens`               | transform focused value with pure function |
-| `validate pred lens`       | left when pred fails                       |
+| `validate pred`            | left when pred fails, focuses raw value    |
+| `validateWith pred lens`   | left when pred fails, with custom lens     |
 | `withDefault d lens`       | replace left with `right d`                |
 | `recover f lens`           | call f on left to attempt recovery         |
 | `alt lensA lensB`          | try lensA, fall back to lensB              |

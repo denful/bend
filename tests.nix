@@ -312,12 +312,12 @@ in
     };
 
     validate."test-get-pred-pass-returns-right-same-value" = {
-      expr = (bend.validate (x: x > 0) bend.identity).get 5;
+      expr = (bend.validate (x: x > 0)).get 5;
       expected = bend.right 5;
     };
 
     validate."test-get-pred-fail-returns-left-same-value" = {
-      expr = (bend.validate (x: x > 0) bend.identity).get (-1);
+      expr = (bend.validate (x: x > 0)).get (-1);
       expected = bend.left (-1);
     };
 
@@ -484,7 +484,7 @@ in
           lens = bend.pipe [
             (bend.attr "name")
             bend.str
-            (bend.validate (s: s != "") bend.identity)
+            (bend.validate (s: s != ""))
           ];
         in
         lens.get { name = "alice"; };
@@ -497,7 +497,7 @@ in
           lens = bend.pipe [
             (bend.attr "name")
             bend.str
-            (bend.validate (s: s != "") bend.identity)
+            (bend.validate (s: s != ""))
           ];
         in
         lens.get { name = ""; };
@@ -640,7 +640,7 @@ in
     apply."test-apply-with-validation" = {
       expr =
         let
-          lens = bend.compose (bend.apply ({ x, y }: x + y)) (bend.validate (n: n > 20) bend.identity);
+          lens = bend.compose (bend.apply ({ x, y }: x + y)) (bend.validate (n: n > 20));
         in
         lens.get {
           x = 15;
@@ -652,7 +652,7 @@ in
     apply."test-apply-validation-fails" = {
       expr =
         let
-          lens = bend.compose (bend.apply ({ x, y }: x + y)) (bend.validate (n: n > 30) bend.identity);
+          lens = bend.compose (bend.apply ({ x, y }: x + y)) (bend.validate (n: n > 30));
         in
         lens.get {
           x = 15;
@@ -915,7 +915,7 @@ in
         let
           lens = bend.transform {
             x = bend.int;
-            y = bend.validate (s: builtins.stringLength s > 3) bend.str;
+            y = bend.validateWith (s: builtins.stringLength s > 3) bend.str;
           };
         in
         lens.get {
@@ -933,7 +933,7 @@ in
         let
           lens = bend.transform {
             x = bend.int;
-            y = bend.validate (s: builtins.stringLength s > 3) bend.str;
+            y = bend.validateWith (s: builtins.stringLength s > 3) bend.str;
           };
         in
         lens.get {
@@ -1541,11 +1541,11 @@ in
       expected = true;
     };
     predicate."test-andP-with-validate" = {
-      expr = (bend.validate (bend.andP (x: x > 0) (x: x < 100)) bend.identity).get 50;
+      expr = (bend.validate (bend.andP (x: x > 0) (x: x < 100))).get 50;
       expected = bend.right 50;
     };
     predicate."test-andP-with-validate-fails" = {
-      expr = (bend.validate (bend.andP (x: x > 0) (x: x < 100)) bend.identity).get 150;
+      expr = (bend.validate (bend.andP (x: x > 0) (x: x < 100))).get 150;
       expected = bend.left 150;
     };
     predicate."test-orP-with-ensure" = {

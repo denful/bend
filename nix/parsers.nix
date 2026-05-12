@@ -2,9 +2,11 @@ either: adapt: parse: identity:
 let
   map = f: parse (a: either.right (f a));
 
-  validate = pred: parse (a: if pred a then either.right a else either.left a);
+  validateWith = pred: parse (a: if pred a then either.right a else either.left a);
 
-  typeParser = pred: parse (a: if pred a then either.right a else either.left a) identity;
+  validate = pred: validateWith pred identity;
+
+  typeParser = validate;
 
   int = typeParser builtins.isInt;
   str = typeParser builtins.isString;
@@ -34,6 +36,7 @@ in
   inherit
     map
     validate
+    validateWith
     int
     str
     bool
