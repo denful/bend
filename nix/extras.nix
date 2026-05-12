@@ -6,18 +6,11 @@ let
       inBounds = l: builtins.isList l && builtins.length l > n && n >= 0;
     in
     {
-      get =
-        l:
-        if inBounds l then
-          bend.right (builtins.elemAt l n)
-        else
-          bend.left l;
+      get = l: if inBounds l then bend.right (builtins.elemAt l n) else bend.left l;
       set =
         l: v:
         if inBounds l then
-          bend.right (
-            builtins.genList (i: if i == n then v else builtins.elemAt l i) (builtins.length l)
-          )
+          bend.right (builtins.genList (i: if i == n then v else builtins.elemAt l i) (builtins.length l))
         else
           bend.left l;
     };
@@ -78,10 +71,7 @@ let
           results = map lens.get s;
           hasError = builtins.any (r: r ? left) results;
         in
-        if hasError then
-          bend.left results
-        else
-          bend.right (map (r: r.right) results);
+        if hasError then bend.left results else bend.right (map (r: r.right) results);
     set =
       s: vs:
       if !builtins.isList s || !builtins.isList vs || builtins.length s != builtins.length vs then
@@ -92,23 +82,26 @@ let
           results = builtins.genList (i: lens.get (builtins.elemAt vs i)) n;
           hasError = builtins.any (r: r ? left) results;
         in
-        if hasError then
-          bend.left results
-        else
-          bend.right (map (r: r.right) results);
+        if hasError then bend.left results else bend.right (map (r: r.right) results);
   };
 
   atLeast = n: lens: {
     get =
       s:
-      if !builtins.isList s then bend.left s
-      else if builtins.length s < n then bend.left s
-      else (each lens).get s;
+      if !builtins.isList s then
+        bend.left s
+      else if builtins.length s < n then
+        bend.left s
+      else
+        (each lens).get s;
     set =
       s: vs:
-      if !builtins.isList s then bend.left s
-      else if builtins.length s < n then bend.left s
-      else (each lens).set s vs;
+      if !builtins.isList s then
+        bend.left s
+      else if builtins.length s < n then
+        bend.left s
+      else
+        (each lens).set s vs;
   };
 
   some = lens: atLeast 1 lens;
@@ -116,27 +109,39 @@ let
   many = lens: {
     get =
       s:
-      if !builtins.isList s then bend.left s
-      else if s == [ ] then bend.right [ ]
-      else (each lens).get s;
+      if !builtins.isList s then
+        bend.left s
+      else if s == [ ] then
+        bend.right [ ]
+      else
+        (each lens).get s;
     set =
       s: vs:
-      if !builtins.isList s || !builtins.isList vs then bend.left s
-      else if s == [ ] && vs == [ ] then bend.right [ ]
-      else (each lens).set s vs;
+      if !builtins.isList s || !builtins.isList vs then
+        bend.left s
+      else if s == [ ] && vs == [ ] then
+        bend.right [ ]
+      else
+        (each lens).set s vs;
   };
 
   exactly = n: lens: {
     get =
       s:
-      if !builtins.isList s then bend.left s
-      else if builtins.length s != n then bend.left s
-      else (each lens).get s;
+      if !builtins.isList s then
+        bend.left s
+      else if builtins.length s != n then
+        bend.left s
+      else
+        (each lens).get s;
     set =
       s: vs:
-      if !builtins.isList s then bend.left s
-      else if builtins.length s != n then bend.left s
-      else (each lens).set s vs;
+      if !builtins.isList s then
+        bend.left s
+      else if builtins.length s != n then
+        bend.left s
+      else
+        (each lens).set s vs;
   };
 
   mapKey = f: {

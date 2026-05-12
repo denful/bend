@@ -4,6 +4,9 @@ help:
 docs:
   cd docs && pnpm run dev
 
+zerover:
+  echo "obase=2; $(date +%s)" | bc
+
 fmt *args:
   treefmt {{args}}
 

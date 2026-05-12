@@ -20,6 +20,5 @@ in
     // (import ./tests/predicate.nix bend)
     // (import ./tests/higher-order.nix bend)
     // (import ./tests/extras.nix bend)
-    // (import ./tests/debug.nix bend)
-  ;
+    // (import ./tests/debug.nix bend);
 }

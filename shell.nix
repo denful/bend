@@ -10,5 +10,6 @@ pkgs.mkShell {
     pkgs.just
     pkgs.nodejs
     pkgs.pnpm
+    pkgs.bc
   ];
 }

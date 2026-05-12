@@ -56,8 +56,20 @@ bend: {
   };
 
   eachValue."test-eachValue-set-applies-lens-set-per-value" = {
-    expr = (bend.eachValue bend.int).set { a = 1; b = 2; } { a = 10; b = 20; };
-    expected = bend.right { a = 10; b = 20; };
+    expr =
+      (bend.eachValue bend.int).set
+        {
+          a = 1;
+          b = 2;
+        }
+        {
+          a = 10;
+          b = 20;
+        };
+    expected = bend.right {
+      a = 10;
+      b = 20;
+    };
   };
   eachValue."test-eachValue-set-fails-with-evidence-on-bad-value" = {
     expr = (bend.eachValue bend.int).set { a = 1; } { a = "bad"; };
@@ -102,12 +114,28 @@ bend: {
   };
 
   each."test-each-all-pass" = {
-    expr = (bend.each bend.int).get [ 1 2 3 ];
-    expected = bend.right [ 1 2 3 ];
+    expr = (bend.each bend.int).get [
+      1
+      2
+      3
+    ];
+    expected = bend.right [
+      1
+      2
+      3
+    ];
   };
   each."test-each-partial-fail-returns-left-with-evidence" = {
-    expr = (bend.each bend.int).get [ 1 "x" 3 ];
-    expected = bend.left [ (bend.right 1) (bend.left "x") (bend.right 3) ];
+    expr = (bend.each bend.int).get [
+      1
+      "x"
+      3
+    ];
+    expected = bend.left [
+      (bend.right 1)
+      (bend.left "x")
+      (bend.right 3)
+    ];
   };
   each."test-each-empty-list" = {
     expr = (bend.each bend.int).get [ ];
@@ -118,20 +146,37 @@ bend: {
     expected = bend.left 42;
   };
   each."test-each-all-fail-returns-left-with-evidence" = {
-    expr = (bend.each bend.int).get [ "a" "b" ];
-    expected = bend.left [ (bend.left "a") (bend.left "b") ];
+    expr = (bend.each bend.int).get [
+      "a"
+      "b"
+    ];
+    expected = bend.left [
+      (bend.left "a")
+      (bend.left "b")
+    ];
   };
   each."test-each-set-all-pass" = {
     expr = (bend.each bend.int).set [ 1 2 3 ] [ 10 20 30 ];
-    expected = bend.right [ 10 20 30 ];
+    expected = bend.right [
+      10
+      20
+      30
+    ];
   };
   each."test-each-set-length-mismatch-returns-left" = {
     expr = (bend.each bend.int).set [ 1 2 ] [ 10 20 30 ];
-    expected = bend.left [ 1 2 ];
+    expected = bend.left [
+      1
+      2
+    ];
   };
   each."test-each-set-partial-fail-returns-left-with-evidence" = {
     expr = (bend.each bend.int).set [ 1 2 3 ] [ 10 "bad" 30 ];
-    expected = bend.left [ (bend.right 10) (bend.left "bad") (bend.right 30) ];
+    expected = bend.left [
+      (bend.right 10)
+      (bend.left "bad")
+      (bend.right 30)
+    ];
   };
 
   many."test-many-empty-list" = {
@@ -139,12 +184,26 @@ bend: {
     expected = bend.right [ ];
   };
   many."test-many-all-pass" = {
-    expr = (bend.many bend.int).get [ 1 2 3 ];
-    expected = bend.right [ 1 2 3 ];
+    expr = (bend.many bend.int).get [
+      1
+      2
+      3
+    ];
+    expected = bend.right [
+      1
+      2
+      3
+    ];
   };
   many."test-many-partial-fail-returns-left-evidence" = {
-    expr = (bend.many bend.int).get [ 1 "x" ];
-    expected = bend.left [ (bend.right 1) (bend.left "x") ];
+    expr = (bend.many bend.int).get [
+      1
+      "x"
+    ];
+    expected = bend.left [
+      (bend.right 1)
+      (bend.left "x")
+    ];
   };
   many."test-many-set-empty" = {
     expr = (bend.many bend.int).set [ ] [ ];
@@ -152,7 +211,10 @@ bend: {
   };
   many."test-many-set-all-pass" = {
     expr = (bend.many bend.int).set [ 1 2 ] [ 10 20 ];
-    expected = bend.right [ 10 20 ];
+    expected = bend.right [
+      10
+      20
+    ];
   };
 
   some."test-some-empty-fails" = {
@@ -164,8 +226,16 @@ bend: {
     expected = bend.right [ 1 ];
   };
   some."test-some-multiple-pass" = {
-    expr = (bend.some bend.int).get [ 1 2 3 ];
-    expected = bend.right [ 1 2 3 ];
+    expr = (bend.some bend.int).get [
+      1
+      2
+      3
+    ];
+    expected = bend.right [
+      1
+      2
+      3
+    ];
   };
 
   atLeast."test-atLeast-below-minimum-fails" = {
@@ -173,12 +243,26 @@ bend: {
     expected = bend.left [ 1 ];
   };
   atLeast."test-atLeast-exactly-minimum-passes" = {
-    expr = (bend.atLeast 2 bend.int).get [ 1 2 ];
-    expected = bend.right [ 1 2 ];
+    expr = (bend.atLeast 2 bend.int).get [
+      1
+      2
+    ];
+    expected = bend.right [
+      1
+      2
+    ];
   };
   atLeast."test-atLeast-above-minimum-passes" = {
-    expr = (bend.atLeast 2 bend.int).get [ 1 2 3 ];
-    expected = bend.right [ 1 2 3 ];
+    expr = (bend.atLeast 2 bend.int).get [
+      1
+      2
+      3
+    ];
+    expected = bend.right [
+      1
+      2
+      3
+    ];
   };
   atLeast."test-atLeast-empty-with-zero-passes" = {
     expr = (bend.atLeast 0 bend.int).get [ ];
@@ -186,12 +270,26 @@ bend: {
   };
 
   exactly."test-exactly-correct-length-passes" = {
-    expr = (bend.exactly 2 bend.int).get [ 1 2 ];
-    expected = bend.right [ 1 2 ];
+    expr = (bend.exactly 2 bend.int).get [
+      1
+      2
+    ];
+    expected = bend.right [
+      1
+      2
+    ];
   };
   exactly."test-exactly-too-many-fails" = {
-    expr = (bend.exactly 2 bend.int).get [ 1 2 3 ];
-    expected = bend.left [ 1 2 3 ];
+    expr = (bend.exactly 2 bend.int).get [
+      1
+      2
+      3
+    ];
+    expected = bend.left [
+      1
+      2
+      3
+    ];
   };
   exactly."test-exactly-too-few-fails" = {
     expr = (bend.exactly 2 bend.int).get [ 1 ];
@@ -199,10 +297,17 @@ bend: {
   };
   exactly."test-exactly-set-correct-length" = {
     expr = (bend.exactly 2 bend.int).set [ 1 2 ] [ 10 20 ];
-    expected = bend.right [ 10 20 ];
+    expected = bend.right [
+      10
+      20
+    ];
   };
   exactly."test-exactly-set-wrong-length-fails" = {
     expr = (bend.exactly 2 bend.int).set [ 1 2 3 ] [ 10 20 30 ];
-    expected = bend.left [ 1 2 3 ];
+    expected = bend.left [
+      1
+      2
+      3
+    ];
   };
 }

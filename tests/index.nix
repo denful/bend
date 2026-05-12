@@ -61,14 +61,26 @@ bend: {
 
   index."test-index-set-writes-value-at-position-0" = {
     expr = (bend.index 0).set [ 1 2 3 ] 99;
-    expected = bend.right [ 99 2 3 ];
+    expected = bend.right [
+      99
+      2
+      3
+    ];
   };
   index."test-index-set-writes-value-at-position-1" = {
     expr = (bend.index 1).set [ 1 2 3 ] 99;
-    expected = bend.right [ 1 99 3 ];
+    expected = bend.right [
+      1
+      99
+      3
+    ];
   };
   index."test-index-set-out-of-bounds-returns-left" = {
     expr = (bend.index 5).set [ 1 2 3 ] 99;
-    expected = bend.left [ 1 2 3 ];
+    expected = bend.left [
+      1
+      2
+      3
+    ];
   };
 }

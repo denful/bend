@@ -20,15 +20,28 @@ Every lens either refines its input (`right`) or returns the original unchanged 
 Bend’s combinator names deliberately match parser-combinator vocabulary:
 This is not cosmetic. The names signal that [Bend is a parser combinator library](https://bend.denful.dev/explanation/validation-is-parsing), one that operates on Nix data structures instead of character streams, and that happens to also support bidirectional writes.
 
-## **[→ Documentation](https://bend.denfun.dev)**
+**[Read the Documentation Website](https://bend.denfun.dev)**
 
 ## Install
 
+Bend has no dependencies
+
 ```nix
+# flake.nix
 inputs.bend.url = "github:denful/bend";
-
-...
-
 bend = inputs.bend.lib;
 ```
 
+```nix
+# default.nix
+bend = import bend-sources.outPath;
+```
+
+## [zer0ver](https://0ver.org)
+
+Bend uses 0-based versioning. `0.<binary-epoch-of-release>`
+
+```shell
+# same as `just zerover`
+echo "obase=2; $(date +%s)" | bc
+```
