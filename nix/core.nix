@@ -2,7 +2,7 @@ either: adapt: defaultPathError:
 let
   identity = {
     get = either.right;
-    set = _s: b: { right = b; };
+    set = _: either.right;
   };
 
   compose = outer: inner: adapt inner outer.get outer.set either.right;
@@ -22,12 +22,7 @@ let
                 errorFn = step.errorFn or defaultPathError;
               in
               {
-                get =
-                  s:
-                  let
-                    r = innerLens.get s;
-                  in
-                  if r ? left then { left = errorFn path r.left; } else r;
+                get = s: either.mapL (errorFn path) (innerLens.get s);
                 set = innerLens.set;
               }
             else
@@ -44,10 +39,10 @@ let
     in
     result.lens;
 
-  parse = refine: lens: adapt lens (s: either.right s) (s: v: v) refine;
+  parse = refine: lens: adapt lens either.right (_: v: v) refine;
 
   focus =
-    getF: setF: adapt identity (s: either.right (getF s)) (s: v: { right = setF s v; }) either.right;
+    getF: setF: adapt identity (s: either.right (getF s)) (s: v: either.right (setF s v)) either.right;
 in
 {
   inherit

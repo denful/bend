@@ -2,7 +2,7 @@ lmap:
 let
   defaultPathError = path: got: { inherit path got; };
 
-  labelWith = f: lmap f;
+  labelWith = lmap;
   label = msg: lmap (_: msg);
 
   regionWith =
@@ -18,7 +18,7 @@ let
       inner = err;
     });
 
-  annotateWith = errorFn: path: lmap (got: errorFn path got);
+  annotateWith = errorFn: path: lmap (errorFn path);
   annotate = annotateWith defaultPathError;
 
   # ensure: validate pred on right value; left msg if fails; propagates inner left unchanged

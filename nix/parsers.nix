@@ -13,7 +13,7 @@ let
   bool = typeParser builtins.isBool;
   list = typeParser builtins.isList;
 
-  nonEmpty = adapt identity (s: either.right s) (_: ne: { right = [ ne.head ] ++ ne.tail; }) (
+  nonEmpty = adapt identity either.right (_: ne: either.right ([ ne.head ] ++ ne.tail)) (
     l:
     if l == [ ] then
       either.left l
