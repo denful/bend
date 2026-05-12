@@ -958,7 +958,7 @@ in
         age = 30;
       };
     };
-    transformAll."test-single-invalid-field-returns-left-list" = {
+    transformAll."test-single-invalid-field-returns-left-per-field" = {
       expr =
         (bend.transformAll {
           name = bend.str;
@@ -968,15 +968,15 @@ in
             name = "alice";
             age = "thirty";
           };
-      expected = bend.left [
-        {
+      expected = bend.left {
+        name = bend.right "alice";
+        age = bend.left {
           field = "age";
           got = "thirty";
-        }
-      ];
+        };
+      };
     };
-    transformAll."test-all-invalid-fields-accumulated" = {
-      # attrNames sorts alphabetically: age < name → age error first
+    transformAll."test-all-invalid-fields-per-field-eithers" = {
       expr =
         (bend.transformAll {
           name = bend.str;
@@ -986,16 +986,16 @@ in
             name = 1;
             age = "thirty";
           };
-      expected = bend.left [
-        {
+      expected = bend.left {
+        age = bend.left {
           field = "age";
           got = "thirty";
-        }
-        {
+        };
+        name = bend.left {
           field = "name";
           got = 1;
-        }
-      ];
+        };
+      };
     };
     transformAll."test-missing-field-counted-as-error" = {
       expr =
@@ -1004,14 +1004,15 @@ in
           age = bend.int;
         }).get
           { name = "alice"; };
-      expected = bend.left [
-        {
+      expected = bend.left {
+        age = bend.left {
           field = "age";
           got = {
             name = "alice";
           };
-        }
-      ];
+        };
+        name = bend.right "alice";
+      };
     };
     transformAll."test-transformAllWith-custom-error-shape" = {
       expr =
@@ -1023,7 +1024,10 @@ in
             name = "alice";
             age = "thirty";
           };
-      expected = bend.left [ "age:string" ];
+      expected = bend.left {
+        name = bend.right "alice";
+        age = bend.left "age:string";
+      };
     };
     transformAll."test-defaultTransformError-shape" = {
       expr = bend.defaultTransformError "age" 30;

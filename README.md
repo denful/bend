@@ -113,17 +113,23 @@ bend ({ x }: x) ({ y }: y * 2) { x = { y = 22; }; }
 # left "thirty"
 ```
 
-`transformAll` collects every failure instead of stopping at the first:
+`transformAll` validates every field and returns per-field outcomes on failure:
 
 ```nix
 (bend.transformAll {
   name = bend.str;
   age  = bend.int;
-}).get { name = 1; age = "thirty"; }
-# left [
-#   { field = "age";  got = "thirty"; }
-#   { field = "name"; got = 1; }
-# ]
+}).get { name = "alice"; age = "thirty"; }
+# left {
+#   name = right "alice";
+#   age  = left { field = "age"; got = "thirty"; };
+# }
+
+(bend.transformAll {
+  name = bend.str;
+  age  = bend.int;
+}).get { name = "alice"; age = 30; }
+# right { name = "alice"; age = 30; }
 ```
 
 Custom error shape per field:
@@ -132,8 +138,11 @@ Custom error shape per field:
 (bend.transformAllWith (field: got: "${field}: expected ${builtins.typeOf got}") {
   name = bend.str;
   age  = bend.int;
-}).get { name = 1; age = "thirty"; }
-# left [ "age: expected string" "name: expected int" ]
+}).get { name = "alice"; age = "thirty"; }
+# left {
+#   name = right "alice";
+#   age  = left "age: expected string";
+# }
 ```
 
 ## Error shaping

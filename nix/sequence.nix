@@ -84,10 +84,10 @@ let
         s:
         let
           results = map (name: validateField name s) fieldNames;
-          errors = builtins.filter (r: r ? left) results;
+          hasErrors = builtins.any (r: r ? left) results;
         in
-        if errors != [ ] then
-          either.left (map (r: r.left) errors)
+        if hasErrors then
+          either.left (indexAttrs fieldNames results)
         else
           either.right (indexAttrs fieldNames (map (r: r.right) results));
       set = _: b: { right = b; };
