@@ -1,8 +1,10 @@
 # Bend
 
-Composable, bidirectional data transformation for Nix. Every lens either refines its input (`right`) or returns the original unchanged (`left`). No exceptions, no booleans, no sentinels.
+Composable, bidirectional data transformation for Nix. Every lens either refines its input (`right`) or returns the original unchanged (`left`).
 
-Bend draws from Haskell profunctor optics, Scala's `Either`, and the `adapt` primitive from [denful/nfx](https://github.com/denful/nfx). The core idea is [Parse, Don't Validate](https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/): a function that checks a list and returns `true` discards the proof it just computed; a function that returns `{ head; tail; }` keeps it. The data structure *is* the proof.
+Bend draws from Haskell profunctor optics, Scala's `Either`, and the `adapt` primitive from [denful/nfx](https://github.com/denful/nfx).
+
+The core idea is [Parse, Don't Validate](https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/): a validator for non-empty lists that returns `true` is discarding the proof it just computed; instead if the function returns `left empty` or `right { head; tail; }`, the data structure *is* the proof.
 
 ## The primitive
 
@@ -16,7 +18,7 @@ adapt lens cmap smap fmap
 # fmap  — refine focused value (can fail -> left)
 ```
 
-`compose`, `pipe`, `parse`, `map`, `validate`, and `focus` are [one-liners](nix/core.nix) over `adapt`.
+Everything else is derived from it.
 
 ## Either
 
@@ -30,7 +32,7 @@ bend.chain (x: bend.right (x * 2)) (bend.right 5)  # { right = 10; }
 bend.swap  (bend.right 1)                      # { left  = 1; }
 ```
 
-`left` always holds the original bad value. Structured data, not error strings.
+Both `left` and `right` hold structured data, the library provides combinators for tracking error paths or error messages.
 
 ## Composing lenses
 
