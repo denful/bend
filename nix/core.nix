@@ -2,7 +2,7 @@ either: adapt: defaultPathError:
 let
   identity = {
     get = either.right;
-    set = _s: b: b;
+    set = _s: b: { right = b; };
   };
 
   compose = outer: inner: adapt inner outer.get outer.set either.right;
@@ -46,7 +46,8 @@ let
 
   parse = fmap: lens: adapt lens (s: either.right s) (s: v: v) fmap;
 
-  focus = getF: setF: adapt identity (s: either.right (getF s)) setF either.right;
+  focus =
+    getF: setF: adapt identity (s: either.right (getF s)) (s: v: { right = setF s v; }) either.right;
 in
 {
   inherit

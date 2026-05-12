@@ -2,7 +2,7 @@ either: adapt: identity: attr:
 let
   index =
     n:
-    adapt identity (s: either.right s) (s: v: s) (
+    adapt identity (s: either.right s) (s: _v: { right = s; }) (
       l:
       if builtins.isList l && builtins.length l > n && n >= 0 then
         either.right (builtins.elemAt l n)
@@ -26,7 +26,7 @@ let
           else
             either.mapR (acc: acc // { ${name} = fieldResult.right; }) accEither
       ) (either.right { }) (builtins.attrNames obj);
-    set = obj: newValues: newValues;
+    set = _obj: newValues: { right = newValues; };
   };
 in
 {

@@ -23,7 +23,7 @@ let
 
   sequence = lenses: {
     get = s: sequenceEither (map (lens: lens.get s) lenses);
-    set = s: _: s;
+    set = s: _: { right = s; };
   };
 
   collect = names: {
@@ -33,7 +33,7 @@ let
         r = sequenceEither (map (k: (attr k).get s) names);
       in
       if r ? left then r else either.right (indexAttrs names r.right);
-    set = s: _: s;
+    set = s: _: { right = s; };
   };
 
   transform =
@@ -54,7 +54,7 @@ let
           r = sequenceEither (map (name: validateField name s) fieldNames);
         in
         if r ? left then r else either.right (indexAttrs fieldNames r.right);
-      set = _: b: b;
+      set = _: b: { right = b; };
     };
 
   defaultTransformError = field: got: { inherit field got; };
@@ -90,7 +90,7 @@ let
           either.left (map (r: r.left) errors)
         else
           either.right (indexAttrs fieldNames (map (r: r.right) results));
-      set = _: b: b;
+      set = _: b: { right = b; };
     };
 
   transformAll = transformAllWith defaultTransformError;

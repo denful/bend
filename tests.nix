@@ -71,7 +71,7 @@ in
 
     identity."test-identity-set-returns-b-ignoring-s" = {
       expr = bend.identity.set { x = 1; } 99;
-      expected = 99;
+      expected = bend.right 99;
     };
 
     adapt."test-cmap-right-inner-get-receives-extracted-value" = {
@@ -126,6 +126,15 @@ in
       };
     };
 
+    adapt."test-cmap-left-short-circuits-set" = {
+      expr =
+        let
+          lens = bend.adapt bend.identity (_: bend.left "no access") (_s: _v: { }) bend.right;
+        in
+        lens.set { } 99;
+      expected = bend.left "no access";
+    };
+
     pipe."test-empty-equals-identity" = {
       expr = (bend.pipe [ ]).get { x = 1; };
       expected = bend.right { x = 1; };
@@ -158,7 +167,7 @@ in
         x = 1;
         y = 2;
       } 99;
-      expected = {
+      expected = bend.right {
         x = 99;
         y = 2;
       };
@@ -182,7 +191,7 @@ in
         x = 1;
         y = 2;
       } 99;
-      expected = {
+      expected = bend.right {
         x = 99;
         y = 2;
       };
@@ -195,7 +204,7 @@ in
         };
         c = 3;
       } { b = 99; };
-      expected = {
+      expected = bend.right {
         a = {
           b = 99;
         };
@@ -241,7 +250,7 @@ in
             d = 3;
           }
           99;
-      expected = {
+      expected = bend.right {
         a = {
           b = 99;
           c = 2;
@@ -272,7 +281,7 @@ in
         };
         d = 3;
       } 99;
-      expected = {
+      expected = bend.right {
         a = {
           b = 99;
           c = 2;
@@ -401,7 +410,7 @@ in
           7
         ];
       };
-      expected = [
+      expected = bend.right [
         9
         8
         7
@@ -420,7 +429,7 @@ in
 
     withDefault."test-set-unaffected" = {
       expr = (bend.withDefault 0 (bend.attr "n")).set { n = 1; } 99;
-      expected = {
+      expected = bend.right {
         n = 99;
       };
     };
@@ -555,7 +564,7 @@ in
           };
           d = 3;
         } 99;
-      expected = {
+      expected = bend.right {
         a = {
           b = 99;
           c = 2;
@@ -576,7 +585,7 @@ in
             3
           ];
         };
-      expected = {
+      expected = bend.right {
         items = [
           1
           2
@@ -1251,7 +1260,7 @@ in
         x = 1;
         y = 2;
       } 99;
-      expected = {
+      expected = bend.right {
         x = 99;
         y = 2;
       };
@@ -1500,7 +1509,7 @@ in
           x = 1;
           y = 2;
         } 99;
-        expected = {
+        expected = bend.right {
           x = 99;
           y = 2;
         };
@@ -1556,7 +1565,7 @@ in
     };
     debug."test-debug-transparent-set" = {
       expr = (bend.debug "myLabel" (bend.attr "x")).set { x = 1; } 99;
-      expected = {
+      expected = bend.right {
         x = 99;
       };
     };
