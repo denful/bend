@@ -1,0 +1,33 @@
+---
+title: The adapt Primitive
+description: The single four-argument combinator from which all Bend lenses compose.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside title="Source" icon="github">
+[`github.com/denful/bend`](https://github.com/denful/bend)
+</Aside>
+
+## `adapt lens from back refine`
+
+The sole primitive everything composes from.
+
+**Parameters:**
+- `lens` — inner lens to apply to the focused value
+- `from` — extract inner source from outer (must return Either)
+- `back` — write inner result back into outer state
+- `refine` — transform the focused value (must return Either)
+
+**Returns:** A lens with `get` and `set` operations.
+
+```nix
+adapt identity (s: s.x) (s: v: s // { x = v; }) (v: bend.right (v + 1))
+```
+
+**How it works:**
+
+`get` extracts via `from`, applies `lens.get`, then applies `refine`.
+`set` extracts via `from`, applies `lens.set`, writes back via `back`.
+
+All other combinators in Bend — `pipe`, `record`, `each`, `alt`, `attr` — are built from `adapt`.

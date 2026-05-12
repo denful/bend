@@ -1,0 +1,45 @@
+---
+title: Error Messages & Annotations
+description: Wrap failures with context, labels, and structured error data.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside title="Source" icon="github">
+[`github.com/denful/bend`](https://github.com/denful/bend)
+</Aside>
+
+## `label msg lens`
+
+Replace `left` with fixed message.
+
+```nix
+(bend.label "expected integer" bend.int).get "hello"
+# left "expected integer"
+```
+
+## `annotate path lens`
+
+Wrap `left` with `{ path; got; }`.
+
+```nix
+(bend.annotate ["user" "age"] bend.int).get "thirty"
+# left { path = ["user" "age"]; got = "thirty"; }
+```
+
+## `annotateWith f lens`
+
+Like `annotate` but `f got` computes the annotation.
+
+## `ensure pred msg lens`
+
+Check predicate and label failure in one step.
+
+```nix
+(bend.ensure (s: s != "") "name cannot be empty" bend.str).get ""
+# left "name cannot be empty"
+```
+
+## `defaultPathError`
+
+Default error shape for named-step `pipe`: `{ path; got; }`.

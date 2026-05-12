@@ -1,6 +1,6 @@
 bend:
 let
-  withDefault = def: lens: {
+  option = def: lens: {
     get =
       s:
       let
@@ -33,7 +33,7 @@ let
 in
 {
   inherit
-    withDefault
+    option
     over
     getOr
     when

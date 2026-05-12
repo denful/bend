@@ -2,15 +2,15 @@ bend:
 let
   map = f: bend.parse (a: bend.right (f a));
 
-  validateWith = pred: bend.parse (a: if pred a then bend.right a else bend.left a);
+  satisfyWith = pred: bend.parse (a: if pred a then bend.right a else bend.left a);
 
-  validate = pred: validateWith pred bend.identity;
+  satisfy = pred: satisfyWith pred bend.identity;
 
-  int = validate builtins.isInt;
-  str = validate builtins.isString;
-  bool = validate builtins.isBool;
-  list = validate builtins.isList;
-  float = validate builtins.isFloat;
+  int = satisfy builtins.isInt;
+  str = satisfy builtins.isString;
+  bool = satisfy builtins.isBool;
+  list = satisfy builtins.isList;
+  float = satisfy builtins.isFloat;
   number = bend.alt int float;
 
   nonEmpty = bend.adapt bend.identity bend.right (_: ne: bend.right ([ ne.head ] ++ ne.tail)) (
@@ -26,10 +26,10 @@ let
 
   nonBlank = bend.pipe [
     str
-    (validate (s: s != ""))
+    (satisfy (s: s != ""))
   ];
 
-  nullable = lens: {
+  optional = lens: {
     get = s: if s == null then bend.right null else lens.get s;
     set = s: v: if v == null then bend.right null else lens.set s v;
   };
@@ -45,8 +45,8 @@ in
 {
   inherit
     map
-    validate
-    validateWith
+    satisfy
+    satisfyWith
     int
     str
     bool
@@ -55,7 +55,7 @@ in
     number
     nonEmpty
     nonBlank
-    nullable
+    optional
     andP
     orP
     notP

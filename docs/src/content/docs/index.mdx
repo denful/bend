@@ -1,0 +1,166 @@
+---
+title: Bend
+description: Composable, bidirectional data transformation for Nix. Every lens either refines or returns the original unchanged.
+template: splash
+hero:
+  tagline: Data parsing (validation / transformation) pipelines for Nix.
+  actions:
+    - text: Get Started
+      link: /guides/lenses/
+      icon: right-arrow
+    - text: Reference
+      link: /reference/adapt/
+      icon: right-arrow
+    - text: Design Principles
+      link: /explanation/validation-is-parsing
+      variant: minimal
+    - text: Source Code
+      link: https://github.com/denful/bend
+      icon: github
+      variant: minimal
+---
+
+import { Card, CardGrid, Aside, LinkButton } from '@astrojs/starlight/components';
+
+
+<Aside icon="rocket" title="Bending Data">
+Bend draws from Haskell profunctor optics, Scala's `Either`, the `adapt` primitive from [denful/nfx](https://github.com/denful/nfx) and parser-combinators.
+
+The core idea is [Parse, Don't Validate](https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/): a validator for non-empty lists that returns `true` is discarding the proof it just computed; instead if the function returns `left empty` or `right { head; tail; }`, the data structure *is* the proof.
+Every lens either refines its input (`right`) or returns the original unchanged (`left`).
+
+Bend’s combinator names deliberately match parser-combinator vocabulary:
+This is not cosmetic. The names signal that [Bend is a parser combinator library](/explanation/validation-is-parsing), one that operates on Nix data structures instead of character streams, and that happens to also support bidirectional writes.
+</Aside>
+
+<CardGrid>
+  <Card title="Parse, Don't Validate" icon="approve-check">
+    A lens always produce refined data on left/right.
+  </Card>
+  <Card title="Bidirectional" icon="random">
+    Every lens reads and writes through the same path. `get` parses; `set` reconstructs.
+  </Card>
+  <Card title="Composable" icon="puzzle">
+    `pipe`, `record`, `alt` — and parser-combinators inspired operations compose freely from a single `adapt` primitive.
+  </Card>
+  <Card title="All-or-Nothing" icon="warning">
+    Collection combinators either succeed entirely or return structured evidence of every failure.
+  </Card>
+</CardGrid>
+
+
+### The [`adapt`](/explanation/adapt) primitive
+
+Everything in Bend composes from a single combinator:
+
+```nix
+adapt lens from back refine
+# lens    — inner lens
+# from    — extract inner source from outer
+# back    — write inner result back into outer
+# refine  — refine focused value
+```
+
+### Either
+
+`right` and `left`, both carry data not only booleans or error strings.
+
+```nix
+bend.right 42        # { right = 42; }
+bend.left  "hello"   # { left  = "hello"; }
+
+bend.mapR  (x: x + 1) (bend.right 5)               # { right = 6; }
+bend.mapL  (x: x + 1) (bend.left  5)               # { left  = 6; }
+bend.chain (x: bend.right (x * 2)) (bend.right 5)  # { right = 10; }
+bend.swap  (bend.right 1)                           # { left  = 1; }
+```
+
+### Parse, Don't Validate
+
+A validators return refined, structured data perserve validation proofs.
+
+```nix
+bend.nonEmpty.get [ 1 2 3 ]   # right { head = 1; tail = [ 2 3 ]; }
+bend.nonEmpty.get [ ]         # left [ ]
+```
+
+### Composing lenses
+
+`compose` threads two lenses. `pipe` composes a list left-to-right. Each step either refines or short-circuits with the point of failure.
+
+```nix
+let lens = bend.pipe [
+  (bend.attr "name")
+  bend.str
+  (bend.satisfy (s: s != ""))
+];
+in
+lens.get { name = "alice"; }   # right "alice"
+lens.get { name = ""; }        # left ""
+lens.get { name = 42; }        # left 42
+lens.get { }                   # left { }
+```
+
+### Bidirectionality
+
+Lenses write back through the same path they read. `set` returns `right` on success or `left` if the path cannot be reached.
+
+```nix
+let lens = bend.pipe [
+  (bend.attr "config")
+  (bend.attr "timeout")
+];
+in
+lens.get { config = { timeout = 30; }; }
+# right 30
+
+lens.set { config = { timeout = 30; retry = 3; }; extra = true; } 60
+# right { config = { timeout = 60; retry = 3; }; extra = true; }
+```
+
+`attr` returns `left` on `set` when the key is absent — you cannot write through a missing path.
+
+### Schema validation
+
+`record` validates each field and short-circuits on the first failure. `recordAll` gathers all failures.
+
+```nix
+(bend.record {
+  name = bend.str;
+  age  = bend.int;
+}).get { name = "alice"; age = 30; extra = true; }
+# right { name = "alice"; age = 30; }
+
+(bend.recordAll {
+  name = bend.str;
+  age  = bend.int;
+}).get { name = "alice"; age = "thirty"; }
+# left {
+#   name = right "alice";
+#   age  = left { field = "age"; got = "thirty"; };
+# }
+```
+
+### List parsing
+
+`each` applies a lens to every element and returns per-element proof on failure:
+
+```nix
+(bend.each bend.int).get [ 1 2 3 ]
+# right [ 1 2 3 ]
+
+(bend.each bend.int).get [ 1 "x" 3 ]
+# left [ (right 1) (left "x") (right 3) ]
+```
+
+### Cardinality combinators
+
+```nix
+(bend.many  bend.int).get [ ]         # right []    — zero or more
+(bend.some  bend.int).get [ ]         # left []     — one or more required
+(bend.atLeast 2 bend.int).get [ 1 ]   # left [1]    — at least 2 required
+(bend.exactly 3 bend.int).get [ 1 2 ] # left [1 2]  — exactly 3 required
+```
+
+
+<LinkButton variant="primary" icon="right-arrow" href="/reference/core">Combinators Reference</LinkButton>

@@ -1,0 +1,132 @@
+---
+title: The adapt Primitive
+description: Why a single four-argument combinator is sufficient to implement every lens, prism, traversal, and parser in Bend — and where it comes from.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## Leanage
+
+The `adapt` combinator was inspired on [`denful/fx-rs`](https://github.com/denful/fx-rs/blob/main/crates/fx/src/kernel/fx.rs#L36) kernel, where adapt is the basis for lens-based effect-rows.
+And later ported to Nix on [`denful/nfx`](https://github.com/denful/nfx).
+
+No other combinator in Bend is axiomatic. Every function in `bend.lib` is derived from `adapt`.
+
+## The signature
+
+```nix
+adapt lens from back refine
+```
+
+Four arguments:
+
+| Argument | Type | Role |
+|----------|------|------|
+| `lens` | `{ get; set }` | inner lens to delegate to |
+| `from` | `outer → Either inner` | extract inner source from outer |
+| `back` | `outer → inner → Either outer` | write inner result back into outer |
+| `refine` | `inner → Either result` | transform the focused value |
+
+`adapt` returns a new lens `{ get; set }` over the outer type.
+
+## How it works
+
+**`get outer`:**
+
+1. `from outer` — extract inner source. Returns `right inner` or `left outer`.
+2. `lens.get inner` — run inner lens. Returns `right value` or `left inner`.
+3. `refine value` — transform focused value. Returns `right result` or `left`.
+
+Any step returning `left` short-circuits; the left propagates unchanged.
+
+**`set outer value`:**
+
+1. `from outer` — extract inner source (same as get).
+2. `lens.set inner value` — write into inner. Returns `right inner'` or `left`.
+3. `back outer inner'` — write inner result back into outer. Returns `right outer'` or `left`.
+
+The symmetry between get and set is what makes every `adapt`-derived lens bidirectional by construction.
+
+## Why four arguments is enough
+
+A lens is fundamentally: focus → read → write → transform. Those are exactly the four roles. Any more arguments would be redundant; any fewer would lose expressiveness.
+
+Consider what each role provides:
+
+- **`lens`** — reuse existing lenses (composition)
+- **`from`** — navigate to a substructure (zoom in)
+- **`back`** — reconstruct the whole from a modified part (zoom out)
+- **`refine`** — validate or transform the value at focus (parse)
+
+Remove `refine` and you can't parse. Remove `back` and you can't write. Remove `from` and you can't navigate. Remove `lens` and you can't compose. All four are load-bearing.
+
+## Deriving everything from adapt
+
+### `identity`
+
+```nix
+identity = {
+  get = bend.right;
+  set = _: bend.right;
+};
+```
+
+Not built with `adapt` directly — it *is* the base case. `adapt` delegates to `identity` when no inner lens is needed.
+
+### `attr "name"`
+
+```nix
+attr name = adapt identity
+  (s: if s ? ${name} then right s.${name} else left s)
+  (s: v: right (s // { ${name} = v; }))
+  right;
+```
+
+`from` extracts the field or short-circuits. `back` merges the new value back. `refine = right` (no further transformation).
+
+### `parse refine lens`
+
+```nix
+parse refine lens = adapt lens right (_: v: v) refine;
+```
+
+`from = right` (identity extraction). `back` discards the source — parse results don't write back through the source, they produce a new value. `refine` does the parsing work.
+
+### `compose outer inner`
+
+```nix
+compose outer inner = adapt inner outer.get outer.set right;
+```
+
+`from = outer.get` (navigate with the outer lens). `back = outer.set` (write back with outer). `refine = right` (no extra transformation). The inner lens handles its own navigation.
+
+### `pipe [l₁ l₂ ... lₙ]`
+
+Fold `compose` over the list:
+
+```nix
+pipe steps = foldl compose identity steps;
+```
+
+### `record validators`
+
+Each field is an `attr` lens composed with its validator. The results are sequenced. Short-circuit on first failure.
+
+### `each lens`
+
+Map `lens.get` over every element. If any returns `left`, return `left [all results]`. Otherwise `right [all rights]`.
+
+`set` maps `lens.get vs[i]` over new values (validating them), same evidence structure on failure.
+
+<Aside type="note">
+  `each` and `record` are not built directly from `adapt` — they coordinate multiple lenses. But each individual lens they coordinate *is* built from `adapt`. The collection combinators are sequencing logic on top of the primitive.
+</Aside>
+
+## The power of a single primitive
+
+Having one primitive instead of many means:
+
+1. **No special cases** — every lens obeys the same contract.
+2. **Composition is free** — any two lenses compose via `compose`/`pipe` without adapter code.
+3. **Bidirectionality is structural** — `set` is derived from the same `from`/`back` pair as `get`. You cannot write a lens that reads one path and writes another.
+4. **Testing is uniform** — the same test pattern (`get`, `set`, roundtrip) applies to every lens in the library.

@@ -1,0 +1,89 @@
+---
+title: Documentation Structure
+description: Guide to Bend's documentation — explanations, guides, and complete API reference.
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Learn
+
+Deep dives into core concepts and design decisions.
+
+<CardGrid>
+  <Card title="The adapt Primitive" icon="puzzle">
+    Why a single four-argument combinator is sufficient to implement every lens, prism, traversal, and parser in Bend.
+  </Card>
+  <Card title="Parse, Don't Validate" icon="approve-check">
+    How structured error returns replace boolean validation and carry proof of success.
+  </Card>
+  <Card title="Bidirectional Lenses" icon="random">
+    Understanding read-write duality: `get` parses; `set` reconstructs through the same path.
+  </Card>
+  <Card title="Validation is Parsing" icon="document">
+    Unifying schema validation, data parsing, and error recovery under one lens composition.
+  </Card>
+</CardGrid>
+
+## Guides
+
+Step-by-step walkthroughs and practical examples.
+
+<CardGrid>
+  <Card title="Introduction to Lenses" icon="open-book">
+    Hands-on introduction to building and composing lenses from simple operations.
+  </Card>
+  <Card title="Parsing with Bend" icon="document">
+    From schema definition to full JSON parsing with error recovery and cardinality validation.
+  </Card>
+  <Card title="Working with Optics" icon="puzzle">
+    Isomorphisms, prisms, and traversals — beyond simple attribute access.
+  </Card>
+</CardGrid>
+
+## Reference
+
+
+<CardGrid>
+  <Card title="adapt — The Primitive" icon="puzzle">
+    Single four-argument combinator from which all Bend lenses compose.
+  </Card>
+  <Card title="Either" icon="list-format">
+    `right`, `left`, `mapR`, `mapL`, `chain`, `swap` — proof types and operations.
+  </Card>
+  <Card title="Core Combinators" icon="puzzle">
+    `identity`, `compose`, `pipe`, `parse`, `focus`, `iso`, `prism`.
+  </Card>
+  <Card title="Bifunctors" icon="shuffle">
+    `bimap`, `lmap`, `rmap` — map success and failure branches.
+  </Card>
+  <Card title="Attributes & Paths" icon="setting">
+    `attr`, `attrOr`, `path` — focus on object keys and nested structures.
+  </Card>
+  <Card title="Type Parsers & Predicates" icon="approve-check">
+    `int`, `str`, `bool`, `list`, `float`, `number`, `nonEmpty`, `nonBlank`, `optional`, `satisfy`, `andP`, `orP`, `notP`, `map`.
+  </Card>
+  <Card title="Records & Validation" icon="setting">
+    `record`, `recordAll`, `recordAllWith`, `defaultRecordError` — schema validation.
+  </Card>
+  <Card title="Lists" icon="list-format">
+    `each`, `many`, `some`, `atLeast`, `exactly`, `index` — apply lenses to list elements with cardinality control.
+  </Card>
+  <Card title="Collections" icon="list-format">
+    `eachValue`, `mapKey`, `sequence`, `zip` — work with pairs, sequences, and object values.
+  </Card>
+  <Card title="Control Flow" icon="shuffle">
+    `option`, `over`, `getOr`, `when`, `unless` — conditional application and value extraction.
+  </Card>
+  <Card title="Error Recovery" icon="warning">
+    `alt`, `choice`, `recover` — fallback strategies and error handling.
+  </Card>
+  <Card title="Error Handling" icon="warning">
+    `label`, `annotate`, `annotateWith`, `ensure`, `defaultPathError` — wrap failures with context.
+  </Card>
+  <Card title="Function Application" icon="puzzle">
+    `apply` — extract named arguments from attrsets and call functions.
+  </Card>
+  <Card title="Debugging" icon="puzzle">
+    `debug` — trace lens activity to stderr.
+  </Card>
+</CardGrid>

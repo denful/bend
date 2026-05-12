@@ -1,0 +1,116 @@
+---
+title: Optics
+description: Isomorphisms, prisms, traversals, conditional lenses, optional values, and recovery.
+---
+
+## Isomorphisms
+
+`iso f g` is a lens that always succeeds in both directions. `get = right ∘ f`, `set` ignores the source and applies `g`:
+
+```nix
+let celsius = bend.iso (f: (f - 32.0) / 1.8) (c: c * 1.8 + 32.0);
+in celsius.get 212.0   # right 100.0
+   celsius.set 0 100.0 # right 212.0
+```
+
+## Prisms
+
+`prism build match` focuses on one variant of a sum type. `match` returns `left s` for the wrong variant or `right a` for the focused value; `build` reconstructs:
+
+```nix
+let gitUrl = bend.prism
+  (url: { type = "git"; inherit url; })
+  (s: if s.type or "" == "git" then bend.right s.url else bend.left s);
+in
+gitUrl.get { type = "git"; url = "https://example.com"; }  # right "https://example.com"
+gitUrl.get { type = "path"; path = "/foo"; }               # left { type = "path"; ... }
+gitUrl.set { } "https://new.url"                           # right { type = "git"; url = "https://new.url"; }
+```
+
+## Traversals
+
+`zip` focuses two parts of the same source simultaneously:
+
+```nix
+(bend.zip (bend.attr "x") (bend.attr "y")).get { x = 1; y = 2; z = 3; }
+# right { a = 1; b = 2; }
+
+(bend.zip (bend.attr "x") (bend.attr "y")).set { x = 0; y = 0; z = 3; } { a = 10; b = 20; }
+# right { x = 10; y = 20; z = 3; }
+```
+
+`sequence` gathers results from multiple lenses applied to the same source:
+
+```nix
+(bend.sequence [ bend.str bend.str ]).get "hello"
+# right [ "hello" "hello" ]
+```
+
+## Conditional application
+
+`when pred lens` applies a lens only when the predicate passes on the source, otherwise returns `right s` unchanged:
+
+```nix
+let maybeCheck = bend.when (v: v != null) bend.str;
+in
+maybeCheck.get null    # right null   (skipped)
+maybeCheck.get "hi"    # right "hi"
+maybeCheck.get 42      # left 42
+```
+
+`unless pred lens` is the inverse.
+
+## Optional and blank
+
+`optional lens` short-circuits on `null`, letting it pass as `right null`:
+
+```nix
+(bend.optional bend.str).get null    # right null
+(bend.optional bend.str).get "hi"    # right "hi"
+(bend.optional bend.str).get 42      # left 42
+```
+
+`nonBlank` accepts non-empty strings only. `attrOr "k" def` reads a key with a fallback default:
+
+```nix
+bend.nonBlank.get ""            # left ""
+bend.nonBlank.get "hello"       # right "hello"
+
+(bend.attrOr "port" 8080).get { }               # right 8080
+(bend.attrOr "port" 8080).get { port = 3000; }  # right 3000
+```
+
+## Recovery and union types
+
+`recover` receives the failed value and can attempt new logic:
+
+```nix
+let port = bend.recover
+  (v: if builtins.isString v
+      then let n = builtins.fromJSON v;
+           in if builtins.isInt n then bend.right n else bend.left v
+      else bend.left v)
+  bend.int;
+in
+port.get 8080    # right 8080
+port.get "8080"  # right 8080
+port.get "http"  # left "http"
+```
+
+`alt` tries a second lens when the first fails. `choice` generalises to a list:
+
+```nix
+(bend.alt bend.str bend.int).get "hello"   # right "hello"
+(bend.alt bend.str bend.int).get 42        # right 42
+(bend.alt bend.str bend.int).get true      # left true
+
+bend.choice [ bend.str bend.int bend.bool ]
+```
+
+Predicate combinators for `satisfy` and `ensure`:
+
+```nix
+let validPort = bend.andP (x: x > 0) (x: x < 65536);
+in (bend.ensure validPort "invalid port" bend.int).get 80    # right 80
+   (bend.ensure validPort "invalid port" bend.int).get 99999 # left "invalid port"
+```

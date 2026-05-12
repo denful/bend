@@ -26,11 +26,6 @@ let
     set = s: _: bend.right s;
   };
 
-  collect = names: {
-    get = s: bend.mapR (indexAttrs names) (sequenceEither (map (k: (bend.attr k).get s) names));
-    set = s: _: bend.right s;
-  };
-
   zip = lensA: lensB: {
     get =
       s:
@@ -55,7 +50,7 @@ let
       if ra ? right then lensB.set ra.right v.b else ra;
   };
 
-  transform =
+  record =
     validators:
     let
       fieldNames = builtins.attrNames validators;
@@ -72,9 +67,9 @@ let
       set = _: bend.right;
     };
 
-  defaultTransformError = field: got: { inherit field got; };
+  defaultRecordError = field: got: { inherit field got; };
 
-  transformAllWith =
+  recordAllWith =
     errorFn: validators:
     let
       fieldNames = builtins.attrNames validators;
@@ -105,16 +100,15 @@ let
       set = _: bend.right;
     };
 
-  transformAll = transformAllWith defaultTransformError;
+  recordAll = recordAllWith defaultRecordError;
 in
 {
   inherit
     sequence
-    collect
     zip
-    transform
-    defaultTransformError
-    transformAllWith
-    transformAll
+    record
+    defaultRecordError
+    recordAllWith
+    recordAll
     ;
 }

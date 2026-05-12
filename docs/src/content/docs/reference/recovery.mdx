@@ -1,0 +1,37 @@
+---
+title: Error Recovery
+description: Fallback strategies and error handling.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside title="Source" icon="github">
+[`github.com/denful/bend`](https://github.com/denful/bend)
+</Aside>
+
+## `alt lensA lensB`
+
+Try `lensA`; fall back to `lensB` on `left`.
+
+```nix
+(bend.alt bend.str bend.int).get 42     # right 42
+(bend.alt bend.str bend.int).get true   # left true
+```
+
+## `choice [lens ...]`
+
+Try each lens in order; return first `right` or final `left`.
+
+## `recover f lens`
+
+Call `f left-value` to attempt recovery; `f` must return Either.
+
+```nix
+let port = bend.recover
+  (v: if builtins.isString v
+      then let n = builtins.fromJSON v;
+           in if builtins.isInt n then bend.right n else bend.left v
+      else bend.left v)
+  bend.int;
+in port.get "8080"   # right 8080
+```

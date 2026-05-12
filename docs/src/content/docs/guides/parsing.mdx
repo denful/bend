@@ -1,0 +1,125 @@
+---
+title: Parsing
+description: Parse Don't Validate, schema validation with record/recordAll, list parsing with each and cardinality combinators, and error shaping.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## Parse, Don't Validate
+
+A validator for non-empty lists that returns `true` discards the proof it just computed. Instead, return the refined structure — the data *is* the proof:
+
+```nix
+bend.nonEmpty.get []          # left []
+bend.nonEmpty.get [1 2 3]     # right { head = 1; tail = [2 3]; }
+```
+
+The caller who gets `right { head; tail; }` never needs to re-check emptiness. The type carries the guarantee.
+
+<Aside type="tip">
+  See [Parse, Don't Validate](https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/) by Alexis King.
+</Aside>
+
+## Schema validation
+
+`record` validates each field with its own lens and short-circuits on the first failure:
+
+```nix
+(bend.record {
+  name = bend.str;
+  age  = bend.int;
+}).get { name = "alice"; age = 30; extra = true; }
+# right { name = "alice"; age = 30; }
+
+(bend.record {
+  name = bend.str;
+  age  = bend.int;
+}).get { name = "alice"; age = "thirty"; }
+# left "thirty"
+```
+
+`recordAll` validates every field and returns per-field outcomes on failure — full evidence, no silent drops:
+
+```nix
+(bend.recordAll {
+  name = bend.str;
+  age  = bend.int;
+}).get { name = "alice"; age = "thirty"; }
+# left {
+#   name = right "alice";
+#   age  = left { field = "age"; got = "thirty"; };
+# }
+```
+
+Custom error shape per field:
+
+```nix
+(bend.recordAllWith (field: got: "${field}: expected ${builtins.typeOf got}") {
+  name = bend.str;
+  age  = bend.int;
+}).get { name = "alice"; age = "thirty"; }
+# left {
+#   name = right "alice";
+#   age  = left "age: expected string";
+# }
+```
+
+## List parsing
+
+`each` applies a lens to every element. All must succeed or the result is `left` with per-element evidence:
+
+```nix
+(bend.each bend.int).get [ 1 2 3 ]
+# right [ 1 2 3 ]
+
+(bend.each bend.int).get [ 1 "x" 3 ]
+# left [ (right 1) (left "x") (right 3) ]
+```
+
+Cardinality combinators wrap `each`:
+
+```nix
+(bend.many  bend.int).get [ ]         # right []    — zero or more
+(bend.some  bend.int).get [ ]         # left []     — one or more required
+(bend.atLeast 2 bend.int).get [ 1 ]   # left [1]    — at least 2 required
+(bend.exactly 3 bend.int).get [ 1 2 ] # left [1 2]  — exactly 3 required
+```
+
+All are bidirectional — `set` validates each new value through the element lens:
+
+```nix
+(bend.each bend.int).set [ 1 2 3 ] [ 10 20 30 ]
+# right [ 10 20 30 ]
+
+(bend.each bend.int).set [ 1 2 3 ] [ 10 "bad" 30 ]
+# left [ (right 10) (left "bad") (right 30) ]
+```
+
+## Error shaping
+
+By default `left` carries the original bad value. These combinators give failures structure:
+
+```nix
+# Replace left with a fixed message
+(bend.label "expected integer" bend.int).get "hello"
+# left "expected integer"
+
+# Machine-readable location
+(bend.annotate ["user" "age"] bend.int).get "thirty"
+# left { path = ["user" "age"]; got = "thirty"; }
+
+# Validate and label in one step
+(bend.ensure (s: s != "") "name cannot be empty" bend.str).get ""
+# left "name cannot be empty"
+```
+
+Named pipe steps track the path automatically when a step fails:
+
+```nix
+(bend.pipe [
+  { name = "database"; lens = bend.attr "database"; }
+  { name = "host";     lens = bend.attr "host"; }
+  bend.str
+]).get { database = { host = 5432; }; }
+# left { path = ["database" "host"]; got = 5432; }
+```

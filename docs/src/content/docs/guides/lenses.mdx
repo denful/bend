@@ -1,0 +1,114 @@
+---
+title: Lenses
+description: The adapt primitive, Either, composing lenses, and bidirectionality.
+---
+
+## The `adapt` primitive
+
+Everything in Bend composes from a single combinator:
+
+```nix
+adapt lens from back refine
+# lens    — inner lens
+# from    — extract inner source from outer
+# back    — write inner result back into outer
+# refine  — refine focused value
+```
+
+`pipe`, `record`, `each`, `alt` — all are built from `adapt`.
+
+## Either
+
+`right` and `left` are the proof type. Both carry structured data.
+
+```nix
+bend.right 42        # { right = 42; }
+bend.left  "hello"   # { left  = "hello"; }
+
+bend.mapR  (x: x + 1) (bend.right 5)          # { right = 6; }
+bend.mapL  (x: x + 1) (bend.left  5)          # { left  = 6; }
+bend.chain (x: bend.right (x * 2)) (bend.right 5)  # { right = 10; }
+bend.swap  (bend.right 1)                      # { left  = 1; }
+```
+
+## Composing lenses
+
+`pipe` composes a list of lenses left-to-right. Each step either refines or short-circuits with the point of failure:
+
+```nix
+let lens = bend.pipe [
+  (bend.attr "name")
+  bend.str
+  (bend.satisfy (s: s != ""))
+];
+in
+lens.get { name = "alice"; }   # right "alice"
+lens.get { name = ""; }        # left ""
+lens.get { name = 42; }        # left 42
+lens.get { }                   # left { }
+```
+
+`compose outer inner` threads two lenses directly. `pipe` is sugar for a list.
+
+## Bidirectional
+
+Every lens has both `get` and `set`. `set` writes back through the same path it reads:
+
+```nix
+let lens = bend.pipe [
+  (bend.attr "config")
+  (bend.attr "timeout")
+];
+in
+lens.get { config = { timeout = 30; }; }
+# right 30
+
+lens.set { config = { timeout = 30; retry = 3; }; extra = true; } 60
+# right { config = { timeout = 60; retry = 3; }; extra = true; }
+```
+
+`attr` returns `left` on `set` when the key is absent:
+
+```nix
+(bend.path ["a" "b"]).set { a = { b = 0; c = 1; }; } 99
+# right { a = { b = 99; c = 1; }; }
+
+(bend.path ["a" "b"]).set { } 99
+# left { }
+```
+
+## Callability
+
+`bend` is callable. Each function argument composes another `apply` lens. A non-function argument triggers `get`:
+
+```nix
+bend ({ x, y }: x + y) { x = 10; y = 32; }
+# right 42
+
+bend ({ x, y }: x + y) { x = 10; }
+# left { x = 10; }   <- missing y, original attrset returned
+
+bend ({ x }: x) ({ y }: y * 2) { x = { y = 22; }; }
+# right 44
+```
+
+`apply` introspects argument names and extracts exactly those keys. Extra keys are ignored; missing keys short-circuit.
+
+## Modifying in place
+
+`over` applies a function to the focused value and returns the updated whole:
+
+```nix
+bend.over (bend.path ["config" "timeout"]) (n: n * 2) { config = { timeout = 30; }; }
+# right { config = { timeout = 60; }; }
+
+bend.over bend.int (n: n + 1) "not-a-number"
+# left "not-a-number"
+```
+
+`getOr` extracts the raw value without the Either wrapper, returning a default on left:
+
+```nix
+bend.getOr 0 bend.int 42      # 42
+bend.getOr 0 bend.int "bad"   # 0
+```

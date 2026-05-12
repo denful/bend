@@ -1,0 +1,58 @@
+---
+title: Core Combinators
+description: Composition, identity, and isomorphisms — fundamental lens operations.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside title="Source" icon="github">
+[`github.com/denful/bend`](https://github.com/denful/bend)
+</Aside>
+
+## `identity`
+
+Lens that always returns `right s`. A no-op.
+
+```nix
+bend.identity.get 42   # right 42
+```
+
+## `compose outer inner`
+
+Thread `inner` through `outer`. `get` applies outer then inner; `set` is the reverse.
+
+## `pipe [lens ...]`
+
+Compose a list of lenses left-to-right. Short-circuits on first `left`.
+
+```nix
+bend.pipe [ (bend.attr "x") bend.int ]
+```
+
+## `parse refine lens`
+
+Apply `refine` (a function returning Either) to the focused value of `lens`.
+
+## `focus getF setF`
+
+Lift pure get/set functions into a lens. `getF s` must return Either.
+
+## `iso f g`
+
+Isomorphism. `get = right ∘ f`; `set` ignores the source and applies `g`.
+
+```nix
+let celsius = bend.iso (f: (f - 32.0) / 1.8) (c: c * 1.8 + 32.0);
+in celsius.get 212.0   # right 100.0
+   celsius.set 0 100.0 # right 212.0
+```
+
+## `prism build match`
+
+Sum-type focus. `match s` returns `right a` for the focused variant or `left s` for wrong variant. `build a` reconstructs.
+
+```nix
+let gitUrl = bend.prism
+  (url: { type = "git"; inherit url; })
+  (s: if s.type or "" == "git" then bend.right s.url else bend.left s);
+```

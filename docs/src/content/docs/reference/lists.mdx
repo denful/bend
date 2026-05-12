@@ -1,0 +1,43 @@
+---
+title: Lists & Sequences
+description: Collection combinators with cardinality control and detailed error tracking.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside title="Source" icon="github">
+[`github.com/denful/bend`](https://github.com/denful/bend)
+</Aside>
+
+## `each lens`
+
+Apply `lens` to every list element. `right` list when all succeed; `left` list of per-element Either on any failure.
+
+```nix
+(bend.each bend.int).get [ 1 "x" 3 ]
+# left [ (right 1) (left "x") (right 3) ]
+```
+
+## Cardinality
+
+### `many lens`
+
+Zero or more — always `right`. Wraps `each`.
+
+### `some lens`
+
+One or more required. `left []` when empty.
+
+### `atLeast n lens`
+
+At least `n` elements required.
+
+### `exactly n lens`
+
+Exactly `n` elements required.
+
+## Direct Access
+
+### `index n`
+
+Focus on element at index `n`. `right` when in bounds; `left` otherwise.

@@ -1,0 +1,49 @@
+---
+title: Bifunctors
+description: Map both success and failure branches of a lens result.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside title="Source" icon="github">
+[`github.com/denful/bend`](https://github.com/denful/bend)
+</Aside>
+
+## `bimap fL fR lens`
+
+Map both branches of the lens result.
+
+- `fL` applied to left; `fR` applied to right
+- `set` is unchanged (only `get` transforms)
+
+```nix
+(bend.bimap (_: "err") (x: x * 2) bend.int).get 5
+# right 10
+
+(bend.bimap (_: "err") (x: x * 2) bend.int).get "bad"
+# left "err"
+```
+
+## `lmap f lens`
+
+Map left branch only; pass right unchanged.
+
+```nix
+(bend.lmap (_: "replaced") bend.int).get "bad"
+# left "replaced"
+
+(bend.lmap (_: "replaced") bend.int).get 42
+# right 42
+```
+
+## `rmap f lens`
+
+Map right branch only; pass left unchanged.
+
+```nix
+(bend.rmap (x: x + 1) bend.int).get 5
+# right 6
+
+(bend.rmap (x: x + 1) bend.int).get "bad"
+# left "bad"
+```

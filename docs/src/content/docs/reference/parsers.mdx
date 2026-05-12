@@ -1,0 +1,89 @@
+---
+title: Type Parsers & Predicates
+description: Type validation, predicates, and transformations.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside title="Source" icon="github">
+[`github.com/denful/bend`](https://github.com/denful/bend)
+</Aside>
+
+## Type Checkers
+
+### `int`
+
+`right` when value is integer; `left` otherwise.
+
+### `str`
+
+`right` when value is string; `left` otherwise.
+
+### `bool`
+
+`right` when value is bool; `left` otherwise.
+
+### `list`
+
+`right` when value is list; `left` otherwise.
+
+### `float`
+
+`right` when value is float; `left` otherwise.
+
+### `number`
+
+`right` when value is int or float; `left` otherwise.
+
+## Structured Validators
+
+### `satisfy pred`
+
+`right s` when `pred s` is true; `left s` otherwise.
+
+### `satisfyWith pred lens`
+
+`right` when pred passes; uses `lens` for value focus.
+
+### `nonEmpty`
+
+`right { head; tail; }` when list is non-empty; `left []` when empty.
+
+```nix
+bend.nonEmpty.get [ 1 2 3 ]   # right { head = 1; tail = [ 2 3 ]; }
+bend.nonEmpty.get [ ]          # left [ ]
+```
+
+### `nonBlank`
+
+`right` when string is non-empty; `left` when empty or not a string.
+
+### `optional lens`
+
+Pass `null` as `right null`; apply `lens` to non-null values.
+
+```nix
+(bend.optional bend.str).get null   # right null
+(bend.optional bend.str).get "hi"   # right "hi"
+(bend.optional bend.str).get 42     # left 42
+```
+
+## Predicate Combinators
+
+### `andP pred1 pred2`
+
+Combine two predicates with AND.
+
+### `orP pred1 pred2`
+
+Combine two predicates with OR.
+
+### `notP pred`
+
+Negate a predicate.
+
+## Transformations
+
+### `map f lens`
+
+Apply pure function `f` to focused value (wraps result in `right`).

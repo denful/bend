@@ -1,6 +1,9 @@
 help:
   just -l
 
+docs:
+  cd docs && pnpm run dev
+
 fmt *args:
   treefmt {{args}}
 

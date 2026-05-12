@@ -2,15 +2,27 @@ bend:
 let
   index =
     n:
-    bend.adapt bend.identity bend.right (s: _: bend.right s) (
-      l:
-      if builtins.isList l && builtins.length l > n && n >= 0 then
-        bend.right (builtins.elemAt l n)
-      else
-        bend.left l
-    );
+    let
+      inBounds = l: builtins.isList l && builtins.length l > n && n >= 0;
+    in
+    {
+      get =
+        l:
+        if inBounds l then
+          bend.right (builtins.elemAt l n)
+        else
+          bend.left l;
+      set =
+        l: v:
+        if inBounds l then
+          bend.right (
+            builtins.genList (i: if i == n then v else builtins.elemAt l i) (builtins.length l)
+          )
+        else
+          bend.left l;
+    };
 
-  mapValues = lens: {
+  eachValue = lens: {
     get =
       obj:
       builtins.foldl' (
@@ -26,26 +38,34 @@ let
           else
             bend.mapR (acc: acc // { ${name} = fieldResult.right; }) accEither
       ) (bend.right { }) (builtins.attrNames obj);
-    set = _: bend.right;
-  };
-
-  mapList = lens: {
-    get =
-      s:
-      if !builtins.isList s then
-        bend.left s
+    set =
+      obj: vs:
+      if !builtins.isAttrs obj || !builtins.isAttrs vs then
+        bend.left obj
       else
-        builtins.foldl' (
-          acc: elem:
-          if acc ? left then
-            acc
-          else
-            let
-              r = lens.get elem;
-            in
-            if r ? left then r else bend.mapR (list: list ++ [ r.right ]) acc
-        ) (bend.right [ ]) s;
-    set = _: bend.right;
+        let
+          keys = builtins.attrNames obj;
+          results = map (k: lens.get vs.${k}) keys;
+          hasError = builtins.any (r: r ? left) results;
+        in
+        if hasError then
+          bend.left (
+            builtins.listToAttrs (
+              builtins.genList (i: {
+                name = builtins.elemAt keys i;
+                value = builtins.elemAt results i;
+              }) (builtins.length keys)
+            )
+          )
+        else
+          bend.right (
+            builtins.listToAttrs (
+              builtins.genList (i: {
+                name = builtins.elemAt keys i;
+                value = (builtins.elemAt results i).right;
+              }) (builtins.length keys)
+            )
+          );
   };
 
   each = lens: {
@@ -55,13 +75,71 @@ let
         bend.left s
       else
         let
-          results = builtins.filter (r: r ? right) (map lens.get s);
+          results = map lens.get s;
+          hasError = builtins.any (r: r ? left) results;
         in
-        bend.right (map (r: r.right) results);
-    set = _: bend.right;
+        if hasError then
+          bend.left results
+        else
+          bend.right (map (r: r.right) results);
+    set =
+      s: vs:
+      if !builtins.isList s || !builtins.isList vs || builtins.length s != builtins.length vs then
+        bend.left s
+      else
+        let
+          n = builtins.length s;
+          results = builtins.genList (i: lens.get (builtins.elemAt vs i)) n;
+          hasError = builtins.any (r: r ? left) results;
+        in
+        if hasError then
+          bend.left results
+        else
+          bend.right (map (r: r.right) results);
   };
 
-  mapKeys = f: {
+  atLeast = n: lens: {
+    get =
+      s:
+      if !builtins.isList s then bend.left s
+      else if builtins.length s < n then bend.left s
+      else (each lens).get s;
+    set =
+      s: vs:
+      if !builtins.isList s then bend.left s
+      else if builtins.length s < n then bend.left s
+      else (each lens).set s vs;
+  };
+
+  some = lens: atLeast 1 lens;
+
+  many = lens: {
+    get =
+      s:
+      if !builtins.isList s then bend.left s
+      else if s == [ ] then bend.right [ ]
+      else (each lens).get s;
+    set =
+      s: vs:
+      if !builtins.isList s || !builtins.isList vs then bend.left s
+      else if s == [ ] && vs == [ ] then bend.right [ ]
+      else (each lens).set s vs;
+  };
+
+  exactly = n: lens: {
+    get =
+      s:
+      if !builtins.isList s then bend.left s
+      else if builtins.length s != n then bend.left s
+      else (each lens).get s;
+    set =
+      s: vs:
+      if !builtins.isList s then bend.left s
+      else if builtins.length s != n then bend.left s
+      else (each lens).set s vs;
+  };
+
+  mapKey = f: {
     get =
       s:
       if !builtins.isAttrs s then
@@ -81,9 +159,12 @@ in
 {
   inherit
     index
-    mapValues
-    mapList
+    eachValue
     each
-    mapKeys
+    atLeast
+    some
+    many
+    exactly
+    mapKey
     ;
 }

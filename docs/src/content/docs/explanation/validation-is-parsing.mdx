@@ -1,0 +1,139 @@
+---
+title: Validation Is Parsing
+description: How the insight that validation is just parsing leads naturally from lenses to parser combinators — and why Bend's combinator names come from parsec and fastparse.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## The equivalence
+
+A validator checks a predicate. A parser checks a predicate and returns the refined value. They are the same operation with different return types.
+
+```nix
+# Validator — discards the proof
+builtins.isInt 42   # true
+
+# Parser — returns the proof
+bend.int.get 42     # right 42
+bend.int.get "x"    # left "x"
+```
+
+`bend.int` is a parser. It happens to look like a validator (`isInt`) but it returns the parsed value, not a boolean. This equivalence is not a coincidence — it is the central design insight of Bend.
+
+Once you accept that validators are just parsers with weaker return types, the natural question is: what other parser infrastructure applies?
+
+## Satisfy — the parser primitive
+
+In parser combinator libraries (parsec, fastparse), `satisfy pred` is the primitive: accept input when a predicate holds, reject otherwise.
+
+Bend's `satisfy` is identical:
+
+```nix
+bend.satisfy builtins.isInt        # same as bend.int
+bend.satisfy (n: n > 0)            # positive number parser
+bend.satisfy (s: builtins.stringLength s <= 100)  # bounded string
+```
+
+Type parsers (`int`, `str`, `bool`, `float`, `list`) are just named `satisfy` applications.
+
+## Sequence — pipe
+
+Parser combinators compose sequentially: `p >> q` means "run p, then run q on the result."
+
+Bend's `pipe` is this:
+
+```nix
+bend.pipe [
+  (bend.attr "port")  # focus on port field
+  bend.int            # prove it's an integer
+  (bend.satisfy (n: n > 0 && n < 65536))  # prove it's a valid port
+]
+```
+
+Each lens is a parser. `pipe` is sequential composition. The output of one parser becomes the input of the next. Short-circuit on any `left`.
+
+## Alternative — alt and choice
+
+`p <|> q` in parsec: try `p`, fall back to `q` on failure.
+
+Bend's `alt` and `choice`:
+
+```nix
+bend.alt bend.str bend.int      # string or integer
+bend.choice [ bend.str bend.int bend.bool ]   # first match wins
+```
+
+## Many / some / atLeast / exactly
+
+Parser combinators for repetition:
+
+| parsec | fastparse | Bend |
+|--------|-----------|------|
+| `many p` | `p.rep` | `bend.many lens` |
+| `many1 p` | `p.rep(1)` | `bend.some lens` |
+| `count n p` | `p.rep(exactly=n)` | `bend.exactly n lens` |
+| `p >> q` (N times) | `p.rep(min=n)` | `bend.atLeast n lens` |
+
+Bend's versions are all-or-nothing (PDV): success means every element parsed; failure returns per-element evidence. No greedy "collect what you can."
+
+```nix
+(bend.some bend.int).get [ 1 2 "x" ]
+# left [ (right 1) (right 2) (left "x") ]
+```
+
+The `left` carries proof of which elements failed. The caller can inspect, report, or recover — without information loss.
+
+## Record — structured parsing
+
+`record` in Bend is the parser equivalent of a product type parser. It applies one parser per field, collects all results, and returns the refined record:
+
+```nix
+bend.record {
+  name = bend.str;
+  age  = bend.int;
+}
+```
+
+In parsec terms this is `name_parser ~ age_parser` mapped into a record. `recordAll` is the "collect all errors" variant — rather than short-circuiting on the first failure, it runs all parsers and returns per-field evidence.
+
+## The naming decision
+
+Bend's combinator names deliberately match parser-combinator vocabulary:
+
+| was | now | reason |
+|-----|-----|--------|
+| `validate` | `satisfy` | universal parsec term |
+| `withDefault` | `option` | parsec `option def p` |
+| `nullable` | `optional` | standard parser term |
+| `oneOf` | `choice` | fastparse/parsec term |
+| `transform` | `record` | product-type parser |
+| `mapValues` | `eachValue` | consistent with `each` |
+
+This is not cosmetic. The names signal that Bend *is* a parser combinator library — one that operates on Nix data structures instead of character streams, and that happens to also support bidirectional writes.
+
+## Bidirectionality — what parser combinators lack
+
+Standard parser combinators are unidirectional. `many int` only parses; it has no inverse.
+
+Bend's combinators are bidirectional. `each int` both parses (get) and writes (set):
+
+```nix
+(bend.each bend.int).set [ 1 2 3 ] [ 10 20 30 ]
+# right [ 10 20 30 ]
+```
+
+On `set`, the element lens validates each new value (via `get`, since parse lenses validate via `get`). The set operation is itself a parsing operation — it proves the new values are valid before writing them.
+
+This is the unification: parsing and writing are the same operation, just in different directions. `adapt`'s `from`/`back` symmetry makes this structural.
+
+<Aside type="note">
+  `sepBy`, `between`, and other positional combinators are not yet in Bend. They require more thought for the bidirectional case — if you focus on the items between separators, what does `set` do to the separators? This is deferred.
+</Aside>
+
+## Summary
+
+1. Validation = parsing with a weaker return type.
+2. Parsers return proof; validators discard it.
+3. Parser combinators (`satisfy`, `pipe`, `alt`, `choice`, `many`, `some`, `record`) all have direct Bend equivalents.
+4. Bend's versions are bidirectional: `set` is also a parsing operation.
+5. The `adapt` primitive makes this unification structural — not a naming convention, but a consequence of how lenses are built.

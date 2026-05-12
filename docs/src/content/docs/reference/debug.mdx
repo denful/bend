@@ -1,0 +1,20 @@
+---
+title: Debugging
+description: Inspect lens behavior without changing the output.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside title="Source" icon="github">
+[`github.com/denful/bend`](https://github.com/denful/bend)
+</Aside>
+
+## `debug label lens`
+
+Trace focused values to stderr; transparent (returns same result as `lens`).
+
+```nix
+(bend.debug "checking port" bend.int).get 8080
+# → stderr: checking port: right 8080
+# right 8080
+```

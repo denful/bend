@@ -1,0 +1,25 @@
+---
+title: Function Application
+description: Extract named arguments from attrsets and apply functions.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside title="Source" icon="github">
+[`github.com/denful/bend`](https://github.com/denful/bend)
+</Aside>
+
+## `apply fn`
+
+Extract `fn`'s argument names from an attrset and call `fn`. Missing keys short-circuit with `left s`.
+
+```nix
+bend.apply ({ x, y }: x + y) { x = 10; y = 32; }   # right 42
+bend.apply ({ x, y }: x + y) { x = 10; }             # left { x = 10; }
+```
+
+`bend` itself is callable — each function argument composes another `apply` lens:
+
+```nix
+bend ({ x, y }: x + y) { x = 10; y = 32; }   # right 42
+```

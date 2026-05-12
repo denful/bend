@@ -2,21 +2,7 @@ bend:
 let
   defaultPathError = path: got: { inherit path got; };
 
-  labelWith = bend.lmap;
   label = msg: bend.lmap (_: msg);
-
-  regionWith =
-    f:
-    bend.lmap (err: {
-      context = f err;
-      inner = err;
-    });
-  region =
-    ctx:
-    bend.lmap (err: {
-      context = ctx;
-      inner = err;
-    });
 
   annotateWith = errorFn: path: bend.lmap (errorFn path);
   annotate = annotateWith defaultPathError;
@@ -39,10 +25,7 @@ in
 {
   inherit
     defaultPathError
-    labelWith
     label
-    regionWith
-    region
     annotateWith
     annotate
     ensure

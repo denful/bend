@@ -1,0 +1,34 @@
+---
+title: Either
+description: Proof types and operations on Right/Left values.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside title="Source" icon="github">
+[`github.com/denful/bend`](https://github.com/denful/bend)
+</Aside>
+
+## `right v`
+
+Construct a right value: `{ right = v; }`.
+
+## `left v`
+
+Construct a left value: `{ left = v; }`.
+
+## `mapR f either`
+
+Apply `f` to the right branch; pass left unchanged.
+
+## `mapL f either`
+
+Apply `f` to the left branch; pass right unchanged.
+
+## `chain f either`
+
+Monadic bind on right. `f` must return Either.
+
+## `swap either`
+
+Exchange right and left branches.

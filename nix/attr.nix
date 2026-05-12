@@ -6,7 +6,7 @@ let
       s: v: bend.right (s // { ${name} = v; })
     ) bend.right;
 
-  attrOr = name: def: bend.withDefault def (attr name);
+  attrOr = name: def: bend.option def (attr name);
 
   path = names: builtins.foldl' (outer: name: bend.compose outer (attr name)) bend.identity names;
 in

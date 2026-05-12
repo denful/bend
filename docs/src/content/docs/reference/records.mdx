@@ -1,0 +1,41 @@
+---
+title: Records & Validation
+description: Schema validation for attrsets with per-field control.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside title="Source" icon="github">
+[`github.com/denful/bend`](https://github.com/denful/bend)
+</Aside>
+
+## `record { k = lens; ... }`
+
+Validate each field with its own lens. Short-circuits on first failure.
+
+```nix
+(bend.record { name = bend.str; age = bend.int; }).get { name = "alice"; age = 30; }
+# right { name = "alice"; age = 30; }
+```
+
+## `recordAll { k = lens; ... }`
+
+Validate every field; gather all failures into per-field Either values.
+
+```nix
+(bend.recordAll { name = bend.str; age = bend.int; }).get { name = "alice"; age = "thirty"; }
+# left { name = right "alice"; age = left { field = "age"; got = "thirty"; }; }
+```
+
+## `recordAllWith f { k = lens; ... }`
+
+Like `recordAll` but `f field got` shapes each failure.
+
+```nix
+(bend.recordAllWith (field: got: "${field}: expected ${builtins.typeOf got}") { age = bend.int; }).get { age = "x"; }
+# left { age = left "age: expected string"; }
+```
+
+## `defaultRecordError field got`
+
+Default error shape used by `recordAll`: `{ inherit field got; }`.

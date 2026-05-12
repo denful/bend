@@ -1,0 +1,98 @@
+---
+title: Parse, Don't Validate
+description: The principle that inspired Bend — why validators that return booleans discard proof, and how returning refined types carries the proof instead.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside type="tip">
+  This page summarises [Parse, Don't Validate](https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/) by Alexis King. Reading the original is recommended.
+</Aside>
+
+## The problem with validators
+
+A validator answers a yes/no question. That answer is immediately discarded.
+
+```nix
+# Returns true. The proof vanishes.
+builtins.length list > 0
+```
+
+The caller that receives `true` still needs to handle the empty case downstream — either by adding a guard (re-doing the check), or by calling a partial function that might fail at runtime. The validation happened, but no structural evidence was preserved.
+
+This is *shotgun parsing*: checks are scattered across the codebase rather than consolidated at the boundary.
+
+## Parsing as proof production
+
+A parser does the same work as a validator, but returns the evidence instead of discarding it:
+
+```nix
+# Returns the proof as structure.
+bend.nonEmpty.get list
+# right { head = 1; tail = [2 3]; }   — the non-empty proof
+# left []                              — the empty evidence
+```
+
+`right { head; tail; }` is not just a success signal — it *is* the refinement. The caller who receives this value:
+
+- Does not need to re-check emptiness. `head` and `tail` are unconditionally available.
+- Cannot accidentally use an empty list. The type prevents it.
+- Has the minimal, precise representation they need: not "a list that happens to be non-empty" but "a head and a tail."
+
+## The Either type as proof carrier
+
+Bend represents parse results with `right`/`left`:
+
+```nix
+bend.right { head = 1; tail = [2 3]; }   # proof of non-emptiness
+bend.left  []                             # evidence of what failed
+```
+
+`left` carries the *original failing value*, not a boolean or a string message. This matters: the caller can inspect what went wrong, show it to the user, or recover from it — without losing information.
+
+## Parse at the boundary
+
+The principle says: **get your data into the most precise representation as quickly as possible, at the system boundary, before any of it is acted upon.**
+
+In Bend this means composing lenses at the entry point of your logic:
+
+```nix
+let configLens = bend.pipe [
+  (bend.attr "timeout")
+  bend.int
+  (bend.satisfy (n: n > 0))
+];
+in
+configLens.get rawConfig
+# right 30     — a positive integer, proven
+# left rawConfig   — the exact value that failed
+```
+
+Downstream code receives `right 30` and works with an integer. It never sees the raw config again. The boundary lens is the single point of validation.
+
+## Illegal states become unrepresentable
+
+Choosing the right return type eliminates entire classes of bugs:
+
+| Validator approach | Parser approach |
+|-------------------|----------------|
+| `isNonEmpty list → bool` | `nonEmpty.get list → right {head;tail;}` |
+| caller must guard `head` | `head` always safe to use |
+| `validatePort n → bool` | `validPort.get n → right n` |
+| caller must re-check range | returned `n` is proven in-range |
+| `checkSchema obj → bool` | `record {...}.get obj → right {fields}` |
+| caller works on raw obj | caller works on refined obj |
+
+The parser approach makes the proof structurally available. The validator approach makes the proof disappear.
+
+## How this shapes Bend
+
+Every combinator in Bend is a parser:
+
+- `bend.int` does not return `true` when the value is an integer — it returns `right theInteger`.
+- `bend.nonEmpty` does not return `true` when the list is non-empty — it returns `right { head; tail; }`.
+- `bend.record { name = bend.str; }` does not return `true` when the schema matches — it returns `right { name = "alice"; }`.
+
+The `left` branch always carries the original failing value, not an error code. The `right` branch always carries the refined, proven value — never the raw input.
+
+This design means that once data has passed through a lens, the rest of the program can treat it as proven. No redundant guards. No partial functions. No silent failures.

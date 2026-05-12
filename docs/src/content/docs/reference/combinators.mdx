@@ -1,0 +1,43 @@
+---
+title: Control Flow Combinators
+description: Conditional lenses, optional values, and value extraction.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside title="Source" icon="github">
+[`github.com/denful/bend`](https://github.com/denful/bend)
+</Aside>
+
+## `option default lens`
+
+Replace `left` with `right default`.
+
+## `over lens f s`
+
+Apply `f` to focused value in-place; return updated whole.
+
+```nix
+bend.over (bend.path ["config" "timeout"]) (n: n * 2) { config = { timeout = 30; }; }
+# right { config = { timeout = 60; }; }
+```
+
+## `getOr default lens s`
+
+Extract raw value or return `default` on `left`.
+
+```nix
+bend.getOr 0 bend.int "bad"   # 0
+```
+
+## `when pred lens`
+
+Apply `lens` only when `pred s` is true; otherwise `right s` unchanged.
+
+```nix
+(bend.when (v: v != null) bend.str).get null   # right null
+```
+
+## `unless pred lens`
+
+Apply `lens` only when `pred s` is false.

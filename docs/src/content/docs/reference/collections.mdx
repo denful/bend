@@ -1,0 +1,53 @@
+---
+title: Collections
+description: Work with multiple elements and complex structures — attrsets, pairs, sequences.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside title="Source" icon="github">
+[`github.com/denful/bend`](https://github.com/denful/bend)
+</Aside>
+
+## `eachValue lens`
+
+Apply `lens` to every value in an attrset.
+
+```nix
+(bend.eachValue bend.int).get { x = 1; y = 2; z = 3; }
+# right { x = 1; y = 2; z = 3; }
+
+(bend.eachValue bend.int).get { x = 1; y = "bad"; z = 3; }
+# left "bad"
+```
+
+## `mapKey f`
+
+Rename attrset keys with function `f`.
+
+```nix
+(bend.mapKey (k: k + "_ok")).get { a = 1; b = 2; }
+# right { a_ok = 1; b_ok = 2; }
+```
+
+## `sequence [lens ...]`
+
+Gather results of multiple lenses on the same source into a list.
+
+```nix
+let lens = bend.sequence [ (bend.attr "x") (bend.attr "y") (bend.attr "z") ];
+in lens.get { x = 1; y = 2; z = 3; }
+# right [ 1 2 3 ]
+```
+
+## `zip lensA lensB`
+
+Focus two parts of the same source into `{ a; b; }`.
+
+```nix
+(bend.zip (bend.attr "x") (bend.attr "y")).get { x = 1; y = 2; }
+# right { a = 1; b = 2; }
+
+(bend.zip (bend.attr "x") (bend.attr "y")).set { x = 0; y = 0; z = 3; } { a = 10; b = 20; }
+# right { x = 10; y = 20; z = 3; }
+```

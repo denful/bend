@@ -1,0 +1,121 @@
+---
+title: Bidirectional Lenses
+description: Why every lens in Bend reads and writes through the same path — and how adapt makes bidirectionality structural rather than optional.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## What bidirectional means
+
+A lens is a pair of operations over the same path:
+
+- **`get source`** — read the focused value from the source. Returns `right value` or `left source`.
+- **`set source value`** — write a new value into the source at the focused path. Returns `right source'` or `left source`.
+
+Both operations follow the same path. A lens that reads `config.timeout` also writes `config.timeout`. There is no way to read one path and write another — the path is defined once, in `adapt`'s `from` and `back` arguments.
+
+## The lens laws
+
+A well-behaved lens satisfies three laws:
+
+**Get-Set (write what you read):**
+```nix
+lens.set s (lens.get s).right == right s
+```
+Setting the value you just got leaves the source unchanged.
+
+**Set-Get (read what you write):**
+```nix
+(lens.set s v).right |> lens.get == right v
+```
+Getting after setting returns what you set.
+
+**Set-Set (last write wins):**
+```nix
+lens.set s v1 |> (s': lens.set s' v2) == lens.set s v2
+```
+Two consecutive sets — only the last value matters.
+
+Bend does not enforce these laws at the type level (Nix has no type system), but `adapt`'s structure makes violations difficult to write accidentally.
+
+## Why `left` propagates on set
+
+When `set` returns `left`, it carries the source — not the value. This matches the parsing model: `left` always carries the thing that failed to transform. On a failed write, the "thing that failed" is the source you were trying to write into.
+
+```nix
+(bend.attr "port").set {} 8080
+# left {}   — the source, because "port" key is absent
+```
+
+The caller knows exactly what failed and can inspect it.
+
+## Bidirectionality is structural, not optional
+
+In Bend, you cannot define a lens with only a `get`. The `adapt` primitive requires both `from` (read) and `back` (write). Every derived combinator — `attr`, `path`, `pipe`, `record`, `each`, `index` — inherits this structure.
+
+This is a stronger guarantee than "the library has a set function." It means the write path is always derived from the same specification as the read path. If `attr "timeout"` reads `config.timeout`, then `attr "timeout"`.set writes `config.timeout`. Always.
+
+## Parse lenses and set
+
+Lenses that only validate (parse, satisfy, record) have a no-op set — they return the value unchanged:
+
+```nix
+bend.int.set "anything" 42   # right 42
+```
+
+This is correct. `bend.int` is a refinement lens: its job is to prove "this value is an integer." On set, there is nothing to reconstruct — you are supplying the already-proven value directly. The set passes it through.
+
+Collection lenses like `each` use the element lens's `get` to validate new values on set, because parse lenses validate via `get`:
+
+```nix
+(bend.each bend.int).set [1 2 3] [10 "bad" 30]
+# left [(right 10) (left "bad") (right 30)]
+```
+
+The evidence structure on failure is the same as for `get` — per-element proof, no silent drops.
+
+## Structural lenses and set
+
+Structural lenses (`attr`, `path`, `index`) have meaningful set implementations that reconstruct the source:
+
+```nix
+(bend.index 1).set [10 20 30] 99
+# right [10 99 30]
+
+(bend.attr "x").set { x = 1; y = 2; } 99
+# right { x = 99; y = 2; }
+```
+
+`over` composes get and set into a single in-place modification:
+
+```nix
+bend.over (bend.path ["config" "timeout"]) (n: n * 2) { config = { timeout = 30; }; }
+# right { config = { timeout = 60; }; }
+```
+
+## Prisms: partial bidirectionality
+
+A prism focuses on one variant of a sum type. `get` returns `left` for the wrong variant — that is not a failure in the error sense, it just means "this prism does not apply here." `set` always succeeds by building the focused variant:
+
+```nix
+let gitUrl = bend.prism
+  (url: { type = "git"; inherit url; })
+  (s: if s.type or "" == "git" then bend.right s.url else bend.left s);
+
+gitUrl.get { type = "path"; }        # left { type = "path"; } — wrong variant
+gitUrl.set {} "https://example.com"  # right { type = "git"; url = "https://example.com"; }
+```
+
+`set` on a prism ignores the source entirely — it always constructs the focused variant from the given value. The source is irrelevant because the prism *defines* the structure.
+
+## Isomorphisms: total bidirectionality
+
+An isomorphism always succeeds in both directions. `get` applies `f`; `set` applies `g`, ignoring the source:
+
+```nix
+let celsius = bend.iso (f: (f - 32.0) / 1.8) (c: c * 1.8 + 32.0);
+celsius.get 212.0   # right 100.0
+celsius.set _ 100.0 # right 212.0
+```
+
+Isos are the strongest form of lens — no information is lost in either direction.

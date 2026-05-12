@@ -1,0 +1,44 @@
+---
+title: Attributes
+description: Focus on object keys and nested paths.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside title="Source" icon="github">
+[`github.com/denful/bend`](https://github.com/denful/bend)
+</Aside>
+
+## `attr "k"`
+
+Focus on key `k`. `right` when present; `left s` when missing.
+
+```nix
+(bend.attr "x").get { x = 1; }   # right 1
+(bend.attr "x").get { }           # left { }
+```
+
+## `attrOr "k" default`
+
+Focus on key `k` with fallback. Always `right`.
+
+```nix
+(bend.attrOr "port" 8080).get { }           # right 8080
+(bend.attrOr "port" 8080).get { port = 3; } # right 3
+```
+
+## `path [keys]`
+
+Chain of `attr` for nested access.
+
+```nix
+(bend.path ["a" "b"]).get { a = { b = 42; }; }   # right 42
+```
+
+## `eachValue lens`
+
+Apply `lens` to every value in an attrset.
+
+## `mapKey f`
+
+Rename attrset keys with function `f`.

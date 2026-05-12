@@ -9,5 +9,6 @@ pkgs.mkShell {
     pkgs.nixfmt
     pkgs.just
     pkgs.nodejs
+    pkgs.pnpm
   ];
 }

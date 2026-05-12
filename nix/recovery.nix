@@ -25,8 +25,8 @@ let
       if r ? right then lensA.set s v else lensB.set s v;
   };
 
-  oneOf = lenses: builtins.foldl' alt (builtins.head lenses) (builtins.tail lenses);
+  choice = lenses: builtins.foldl' alt (builtins.head lenses) (builtins.tail lenses);
 in
 {
-  inherit recover alt oneOf;
+  inherit recover alt choice;
 }
