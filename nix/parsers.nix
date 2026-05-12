@@ -1,24 +1,22 @@
-either: adapt: parse: identity:
+bend:
 let
-  map = f: parse (a: either.right (f a));
+  map = f: bend.parse (a: bend.right (f a));
 
-  validateWith = pred: parse (a: if pred a then either.right a else either.left a);
+  validateWith = pred: bend.parse (a: if pred a then bend.right a else bend.left a);
 
-  validate = pred: validateWith pred identity;
+  validate = pred: validateWith pred bend.identity;
 
-  typeParser = validate;
+  int = validate builtins.isInt;
+  str = validate builtins.isString;
+  bool = validate builtins.isBool;
+  list = validate builtins.isList;
 
-  int = typeParser builtins.isInt;
-  str = typeParser builtins.isString;
-  bool = typeParser builtins.isBool;
-  list = typeParser builtins.isList;
-
-  nonEmpty = adapt identity either.right (_: ne: either.right ([ ne.head ] ++ ne.tail)) (
+  nonEmpty = bend.adapt bend.identity bend.right (_: ne: bend.right ([ ne.head ] ++ ne.tail)) (
     l:
     if l == [ ] then
-      either.left l
+      bend.left l
     else
-      either.right {
+      bend.right {
         head = builtins.head l;
         tail = builtins.tail l;
       }

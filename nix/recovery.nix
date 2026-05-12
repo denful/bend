@@ -1,4 +1,4 @@
-either:
+_:
 let
   recover = f: lens: {
     get =

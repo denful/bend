@@ -1,12 +1,12 @@
-either: adapt: identity: compose:
+bend:
 let
   attr =
     name:
-    adapt identity (s: if s ? ${name} then either.right s.${name} else either.left s) (
-      s: v: either.right (s // { ${name} = v; })
-    ) either.right;
+    bend.adapt bend.identity (s: if s ? ${name} then bend.right s.${name} else bend.left s) (
+      s: v: bend.right (s // { ${name} = v; })
+    ) bend.right;
 
-  path = names: builtins.foldl' (outer: name: compose outer (attr name)) identity names;
+  path = names: builtins.foldl' (outer: name: bend.compose outer (attr name)) bend.identity names;
 in
 {
   inherit attr path;

@@ -1,11 +1,11 @@
-either: adapt: defaultPathError:
+bend:
 let
   identity = {
-    get = either.right;
-    set = _: either.right;
+    get = bend.right;
+    set = _: bend.right;
   };
 
-  compose = outer: inner: adapt inner outer.get outer.set either.right;
+  compose = outer: inner: bend.adapt inner outer.get outer.set bend.right;
 
   pipe =
     steps:
@@ -19,10 +19,10 @@ let
           wrapped =
             if isNamed then
               let
-                errorFn = step.errorFn or defaultPathError;
+                errorFn = step.errorFn or bend.defaultPathError;
               in
               {
-                get = s: either.mapL (errorFn path) (innerLens.get s);
+                get = s: bend.mapL (errorFn path) (innerLens.get s);
                 set = innerLens.set;
               }
             else
@@ -39,10 +39,10 @@ let
     in
     result.lens;
 
-  parse = refine: lens: adapt lens either.right (_: v: v) refine;
+  parse = refine: lens: bend.adapt lens bend.right (_: v: v) refine;
 
   focus =
-    getF: setF: adapt identity (s: either.right (getF s)) (s: v: either.right (setF s v)) either.right;
+    getF: setF: bend.adapt identity (s: bend.right (getF s)) (s: v: bend.right (setF s v)) bend.right;
 in
 {
   inherit

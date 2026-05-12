@@ -1,27 +1,26 @@
-lmap:
+bend:
 let
   defaultPathError = path: got: { inherit path got; };
 
-  labelWith = lmap;
-  label = msg: lmap (_: msg);
+  labelWith = bend.lmap;
+  label = msg: bend.lmap (_: msg);
 
   regionWith =
     f:
-    lmap (err: {
+    bend.lmap (err: {
       context = f err;
       inner = err;
     });
   region =
     ctx:
-    lmap (err: {
+    bend.lmap (err: {
       context = ctx;
       inner = err;
     });
 
-  annotateWith = errorFn: path: lmap (errorFn path);
+  annotateWith = errorFn: path: bend.lmap (errorFn path);
   annotate = annotateWith defaultPathError;
 
-  # ensure: validate pred on right value; left msg if fails; propagates inner left unchanged
   ensure = pred: msg: lens: {
     get =
       s:
@@ -33,7 +32,7 @@ let
       else if pred r.right then
         r
       else
-        { left = msg; };
+        bend.left msg;
     set = lens.set;
   };
 in

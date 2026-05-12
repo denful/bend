@@ -1,13 +1,13 @@
-either: adapt: identity: attr:
+bend:
 let
   index =
     n:
-    adapt identity either.right (s: _: either.right s) (
+    bend.adapt bend.identity bend.right (s: _: bend.right s) (
       l:
       if builtins.isList l && builtins.length l > n && n >= 0 then
-        either.right (builtins.elemAt l n)
+        bend.right (builtins.elemAt l n)
       else
-        either.left l
+        bend.left l
     );
 
   mapValues = lens: {
@@ -24,14 +24,11 @@ let
           if fieldResult ? left then
             fieldResult
           else
-            either.mapR (acc: acc // { ${name} = fieldResult.right; }) accEither
-      ) (either.right { }) (builtins.attrNames obj);
-    set = _: either.right;
+            bend.mapR (acc: acc // { ${name} = fieldResult.right; }) accEither
+      ) (bend.right { }) (builtins.attrNames obj);
+    set = _: bend.right;
   };
 in
 {
-  inherit
-    index
-    mapValues
-    ;
+  inherit index mapValues;
 }

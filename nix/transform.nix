@@ -1,3 +1,4 @@
+bend:
 let
   bimap = fLeft: fRight: lens: {
     get =
@@ -5,12 +6,11 @@ let
       let
         r = lens.get s;
       in
-      if r ? right then { right = fRight r.right; } else { left = fLeft r.left; };
+      if r ? right then bend.right (fRight r.right) else bend.left (fLeft r.left);
     set = lens.set;
   };
 
   lmap = f: bimap f (x: x);
-
   rmap = f: bimap (x: x) f;
 in
 {

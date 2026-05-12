@@ -1,100 +1,32 @@
 let
-  either = import ./nix/either.nix;
-  adapt = import ./nix/adapt.nix;
-  transformLib = import ./nix/transform.nix;
-  errorsLib = import ./nix/errors.nix transformLib.lmap;
-  core = import ./nix/core.nix either adapt errorsLib.defaultPathError;
-  attrLib = import ./nix/attr.nix either adapt core.identity core.compose;
-  parsers = import ./nix/parsers.nix either adapt core.parse core.identity;
-  combinators = import ./nix/combinators.nix either;
-  sequenceLib = import ./nix/sequence.nix either adapt core.identity attrLib.attr;
-  applyLib = import ./nix/apply.nix either adapt core.identity;
-  extrasLib = import ./nix/extras.nix either adapt core.identity attrLib.attr;
-  recoveryLib = import ./nix/recovery.nix either;
-  debugLib = import ./nix/debug.nix;
+  bend =
+    (import ./nix/either.nix bend)
+    // (import ./nix/adapt.nix bend)
+    // (import ./nix/transform.nix bend)
+    // (import ./nix/errors.nix bend)
+    // (import ./nix/core.nix bend)
+    // (import ./nix/attr.nix bend)
+    // (import ./nix/parsers.nix bend)
+    // (import ./nix/combinators.nix bend)
+    // (import ./nix/sequence.nix bend)
+    // (import ./nix/apply.nix bend)
+    // (import ./nix/extras.nix bend)
+    // (import ./nix/recovery.nix bend)
+    // (import ./nix/debug.nix bend)
+    // {
+      chainable =
+        let
+          go =
+            lens:
+            lens
+            // {
+              __functor =
+                _: arg: if builtins.isFunction arg then go (bend.compose lens (bend.apply arg)) else lens.get arg;
+            };
+        in
+        go;
 
-  bend = rec {
-    inherit adapt;
-
-    inherit (either)
-      right
-      left
-      swap
-      chain
-      mapR
-      mapL
-      ;
-
-    inherit (core)
-      identity
-      compose
-      pipe
-      parse
-      focus
-      ;
-
-    inherit (attrLib) attr path;
-
-    inherit (parsers)
-      map
-      validate
-      validateWith
-      int
-      str
-      bool
-      list
-      nonEmpty
-      andP
-      orP
-      notP
-      ;
-
-    inherit (combinators) withDefault;
-
-    inherit (recoveryLib) recover alt oneOf;
-
-    inherit (sequenceLib)
-      sequence
-      collect
-      transform
-      defaultTransformError
-      transformAllWith
-      transformAll
-      ;
-
-    inherit (applyLib) apply;
-
-    inherit (extrasLib)
-      index
-      mapValues
-      ;
-
-    inherit (transformLib) bimap lmap rmap;
-
-    inherit (errorsLib)
-      defaultPathError
-      labelWith
-      label
-      regionWith
-      region
-      annotateWith
-      annotate
-      ensure
-      ;
-
-    inherit (debugLib) debug;
-
-    # chainable wraps a lens so each call with a function composes another apply,
-    # and a call with data (non-function) triggers get
-    chainable =
-      lens:
-      lens
-      // {
-        __functor =
-          _: arg: if builtins.isFunction arg then chainable (compose lens (apply arg)) else lens.get arg;
-      };
-
-    __functor = _: fn: chainable (apply fn);
-  };
+      __functor = _: fn: bend.chainable (bend.apply fn);
+    };
 in
 bend

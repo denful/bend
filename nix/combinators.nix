@@ -1,4 +1,4 @@
-either:
+bend:
 let
   withDefault = def: lens: {
     get =
@@ -6,7 +6,7 @@ let
       let
         e = lens.get s;
       in
-      if e ? right then e else either.right def;
+      if e ? right then e else bend.right def;
     set = lens.set;
   };
 in

@@ -1,3 +1,4 @@
+_:
 let
   debug = label: lens: {
     get =

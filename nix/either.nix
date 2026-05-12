@@ -1,4 +1,4 @@
-{
+_: {
   right = value: { right = value; };
   left = value: { left = value; };
   swap = e: if e ? right then { left = e.right; } else { right = e.left; };
