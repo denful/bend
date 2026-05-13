@@ -33,6 +33,7 @@ if (image) {
 ---
 
 <div class="hero">
+	{isIndex && rawHtml && <div class="hero-html sl-flex" set:html={rawHtml} />}
 	{!isIndex && darkImage && (
 		<Image
 			src={darkImage}

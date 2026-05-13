@@ -58,7 +58,7 @@ export default defineConfig({
 				{
 					label: 'Reference',
 					items: [
-						{ label: 'adapt — The Primitive', slug: 'reference/adapt' },
+						{ label: 'Adapt', slug: 'reference/adapt' },
 						{ label: 'Either', slug: 'reference/either' },
 						{ label: 'Core Combinators', slug: 'reference/core' },
 						{ label: 'Bifunctors', slug: 'reference/bifunctor' },
