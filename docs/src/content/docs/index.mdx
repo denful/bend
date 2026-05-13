@@ -148,7 +148,7 @@ lens.set { config = { timeout = 30; retry = 3; }; extra = true; } 60
 
 ### List parsing
 
-`each` applies a lens to every element and returns per-element proof on failure:
+`each` applies a lens to every element and returns per-element proof on failure. Bidirectional: validates on both `get` and `set`.
 
 ```nix
 (bend.each bend.int).get [ 1 2 3 ]
@@ -156,6 +156,12 @@ lens.set { config = { timeout = 30; retry = 3; }; extra = true; } 60
 
 (bend.each bend.int).get [ 1 "x" 3 ]
 # left [ (right 1) (left "x") (right 3) ]
+
+(bend.each bend.int).set [ 1 2 3 ] [ 10 20 30 ]
+# right [ 10 20 30 ]
+
+(bend.each bend.int).set [ 1 2 3 ] [ 10 "x" 30 ]
+# left [ (right 10) (left "x") (right 30) ]
 ```
 
 ### Cardinality combinators
@@ -167,5 +173,79 @@ lens.set { config = { timeout = 30; retry = 3; }; extra = true; } 60
 (bend.exactly 3 bend.int).get [ 1 2 ] # left [1 2]  — exactly 3 required
 ```
 
+### Error recovery with fallbacks
+
+`alt` tries a second lens when the first fails. `recover` applies a function to the error.
+
+```nix
+let lens = bend.alt
+  (bend.attr "preferred")
+  (bend.attr "fallback");
+in
+lens.get { fallback = "value"; }  # right "value"
+
+let lens = bend.recover
+  (e: bend.right "default")
+  (bend.attr "name");
+in
+lens.get { }  # right "default"
+```
+
+### Error labeling and validation
+
+`label` replaces errors with custom messages. `ensure` adds post-parse validation. `annotate` tracks context.
+
+```nix
+let lens = bend.pipe [
+  (bend.label "age field missing" (bend.attr "age"))
+  (bend.ensure (n: n > 0) "age must be positive")
+];
+in
+lens.get { }            # left "age field missing"
+lens.get { age = -5 }   # left "age must be positive"
+```
+
+### Conditional and optional lenses
+
+`when` and `unless` apply a lens only if a condition holds. `option` provides a default on failure.
+
+```nix
+let lens = bend.when (s: s ? admin) (bend.attr "admin");
+in
+lens.get { admin = true; }   # right true
+lens.get { }                 # right { } — unchanged
+
+let lens = bend.option "guest" (bend.attr "user");
+in
+lens.get { }  # right "guest" — default on missing
+```
+
+### Deep attribute access
+
+`path` chains `attr` lenses for nested data. `index` accesses list elements by position.
+
+```nix
+let lens = bend.path [ "config" "server" "port" ];
+in
+lens.get { config = { server = { port = 8080; }; }; }
+# right 8080
+
+(bend.index 1).get [ "a" "b" "c" ]  # right "b"
+(bend.index 5).get [ "a" "b" ]      # left [ "a" "b" ]
+```
+
+### Value transformation
+
+`map` transforms a lens result. `bimap` transforms both left and right. `rmap`/`lmap` transform one side.
+
+```nix
+let lens = bend.map (x: x * 2) (bend.attr "count");
+in
+lens.get { count = 5 }  # right 10
+
+let lens = bend.rmap (s: "got: ${s}") bend.str;
+in
+lens.get "hello"  # right "got: hello"
+```
 
 <LinkButton variant="primary" icon="right-arrow" href="/reference/core">Combinators Reference</LinkButton>
