@@ -13,11 +13,11 @@ hero:
       icon: rocket
     - text: Reference
       link: /reference/adapt/
-      icon: open-book
+      icon: information
       variant: secondary
     - text: Design Principles
       link: /explanation/validation-is-parsing
-      icon: pen
+      icon: approve-check-circle
       variant: minimal
     - text: Source Code
       link: https://github.com/denful/bend
@@ -28,7 +28,7 @@ hero:
 import { Card, CardGrid, Aside, LinkButton } from '@astrojs/starlight/components';
 
 
-<Aside icon="rocket" title="Bending Data">
+<Aside icon="nix" title="Bending Nix Data" type="note">
 Bend draws from Haskell profunctor optics, Scala's `Either`, the `adapt` primitive from [denful/nfx](https://github.com/denful/nfx) and parser-combinators.
 
 The core idea is [Parse, Don't Validate](https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/): a validator for non-empty lists that returns `true` is discarding the proof it just computed; instead if the function returns `left empty` or `right { head; tail; }`, the data structure *is* the proof.
