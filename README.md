@@ -14,7 +14,7 @@
 Bend draws from Haskell profunctor optics, Scala's `Either`, the `adapt` primitive from [denful/nfx](https://github.com/denful/nfx) and parser-combinators.
 
 The core idea is [Parse, Don't Validate](https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/): a validator for non-empty lists that returns `true` is discarding the proof it just computed; instead if the function returns `left empty` or `right { head; tail; }`, the data structure *is* the proof.
-Every lens either refines its input (`right`) or returns the original unchanged (`left`).
+Every lens either refines data as proof on `right` or returns invalid data on `left`.
 
 
 Bend’s combinator names deliberately match parser-combinator vocabulary:
