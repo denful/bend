@@ -100,14 +100,14 @@ In parsec terms this is `name_parser ~ age_parser` mapped into a record. `record
 
 Bend's combinator names deliberately match parser-combinator vocabulary:
 
-| was | now | reason |
-|-----|-----|--------|
-| `validate` | `satisfy` | universal parsec term |
-| `withDefault` | `option` | parsec `option def p` |
-| `nullable` | `optional` | standard parser term |
-| `oneOf` | `choice` | fastparse/parsec term |
-| `transform` | `record` | product-type parser |
-| `mapValues` | `eachValue` | consistent with `each` |
+| bend-combinator | parsec/fastparse |
+|-----|--------|
+| `satisfy` | universal parsec term |
+| `option` | parsec `option def p` |
+| `optional` | standard parser term |
+| `choice` | fastparse/parsec term |
+| `record` | product-type parser |
+| `eachValue` | consistent with `each` |
 
 This is not cosmetic. The names signal that Bend *is* a parser combinator library — one that operates on Nix data structures instead of character streams, and that happens to also support bidirectional writes.
 
